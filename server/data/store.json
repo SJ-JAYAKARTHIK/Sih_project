@@ -1,0 +1,327 @@
+{
+  "farmers": [
+    {
+      "id": "10029384",
+      "name": "Ramesh Verma",
+      "mobile": "9876543210",
+      "password": "password123",
+      "language": "EN",
+      "location": "Warangal, Telangana",
+      "bankDetails": "State Bank of India — Account ****4821 (IFSC: SBIN0004921)"
+    },
+    {
+      "id": "20491823",
+      "name": "Lakshmi Narasimha",
+      "mobile": "9123456789",
+      "password": "password123",
+      "language": "TE",
+      "location": "Nizamabad, Telangana",
+      "bankDetails": "HDFC Bank — Account ****9102 (IFSC: HDFC0001029)"
+    },
+    {
+      "id": "30918274",
+      "name": "Rajesh Singh",
+      "mobile": "9988776655",
+      "password": "password123",
+      "language": "HI",
+      "location": "Guntur, Andhra Pradesh",
+      "bankDetails": "Union Bank of India — Account ****3321 (IFSC: UBIN0532189)"
+    },
+    {
+      "id": "62790037",
+      "name": "Sita Devi",
+      "mobile": "9503090869",
+      "password": "password123",
+      "language": "EN",
+      "location": "Siddipet, Telangana",
+      "bankDetails": "SBI A/C ****7788"
+    },
+    {
+      "id": "24463059",
+      "name": "Voice Caller Farmer",
+      "mobile": "9525739928",
+      "password": "password123",
+      "language": "EN",
+      "location": "Phone IVR Registration",
+      "bankDetails": "Bank Account **** (IFSC: SBIN0001234)"
+    },
+    {
+      "id": "24296679",
+      "name": "Anand Kumar",
+      "mobile": "9997856481",
+      "password": "password123",
+      "language": "EN",
+      "location": "Jangaon, Telangana",
+      "bankDetails": "ICICI Bank ****2233"
+    }
+  ],
+  "mandis": [
+    {
+      "id": "MANDI01",
+      "name": "Warangal Agriculture Market",
+      "location": "Enugulagadda, Warangal, Telangana",
+      "acceptedCrops": [
+        "crop-1",
+        "crop-3",
+        "crop-4"
+      ],
+      "password": "123456"
+    },
+    {
+      "id": "MANDI02",
+      "name": "Nizamabad APMC Mandi",
+      "location": "Market Yard, Nizamabad, Telangana",
+      "acceptedCrops": [
+        "crop-1",
+        "crop-2",
+        "crop-5"
+      ],
+      "password": "123456"
+    },
+    {
+      "id": "MANDI03",
+      "name": "Guntur Grain Yard",
+      "location": "Guntur Central, Andhra Pradesh",
+      "acceptedCrops": [
+        "crop-3",
+        "crop-5",
+        "crop-6"
+      ],
+      "password": "123456"
+    },
+    {
+      "id": "MANDI04",
+      "name": "Khammam Procurement Yard",
+      "location": "Wyra Road, Khammam, Telangana",
+      "acceptedCrops": [
+        "crop-1",
+        "crop-2",
+        "crop-4",
+        "crop-6"
+      ],
+      "password": "123456"
+    }
+  ],
+  "crops": [
+    {
+      "id": "crop-1",
+      "name": "Paddy (Rice / వరి / धान)",
+      "ratePerQuintal": 2300,
+      "icon": "🌾"
+    },
+    {
+      "id": "crop-2",
+      "name": "Wheat (గోధుమలు / गेहूं)",
+      "ratePerQuintal": 2275,
+      "icon": "🌾"
+    },
+    {
+      "id": "crop-3",
+      "name": "Cotton (పత్తి / कपास)",
+      "ratePerQuintal": 7121,
+      "icon": "☁️"
+    },
+    {
+      "id": "crop-4",
+      "name": "Maize (మొక్కజొన్న / मक्का)",
+      "ratePerQuintal": 2090,
+      "icon": "🌽"
+    },
+    {
+      "id": "crop-5",
+      "name": "Pulses / Toor Dal (కందులు / अरहर)",
+      "ratePerQuintal": 7000,
+      "icon": "🫘"
+    },
+    {
+      "id": "crop-6",
+      "name": "Gram / Chickpea (శనగలు / चना)",
+      "ratePerQuintal": 5440,
+      "icon": "🫛"
+    }
+  ],
+  "bookings": [
+    {
+      "id": "BK-1001",
+      "tokenNumber": "TKN-849201",
+      "qrPayload": "{\"token\":\"TKN-849201\",\"farmerId\":\"10029384\",\"mandiId\":\"MANDI01\",\"date\":\"2026-09-08\"}",
+      "farmerId": "10029384",
+      "farmerName": "Ramesh Verma",
+      "mobile": "9876543210",
+      "mandiId": "MANDI01",
+      "mandiName": "Warangal Agriculture Market",
+      "cropId": "crop-1",
+      "cropName": "Paddy (Rice / వరి / धान)",
+      "date": "2026-09-08",
+      "timeSlot": "09:00 - 09:30",
+      "expectedQty": 50,
+      "actualQty": 47.5,
+      "arrivalStatus": "Verified / Arrived",
+      "procurementStatus": "Completed",
+      "paymentStatus": "Completed",
+      "createdAt": "2026-09-08T15:06:49.807Z"
+    },
+    {
+      "id": "BK-1002",
+      "tokenNumber": "TKN-849202",
+      "qrPayload": "{\"token\":\"TKN-849202\",\"farmerId\":\"20491823\",\"mandiId\":\"MANDI01\",\"date\":\"2026-09-08\"}",
+      "farmerId": "20491823",
+      "farmerName": "Lakshmi Narasimha",
+      "mobile": "9123456789",
+      "mandiId": "MANDI01",
+      "mandiName": "Warangal Agriculture Market",
+      "cropId": "crop-3",
+      "cropName": "Cotton (పత్తి / कपास)",
+      "date": "2026-09-08",
+      "timeSlot": "09:30 - 10:00",
+      "expectedQty": 35,
+      "actualQty": null,
+      "arrivalStatus": "Verified / Arrived",
+      "procurementStatus": "Pending",
+      "paymentStatus": "Pending",
+      "createdAt": "2026-09-08T15:36:49.807Z"
+    },
+    {
+      "id": "BK-1788886000957",
+      "tokenNumber": "TKN-907471",
+      "qrPayload": "{\"bookingId\":\"BK-1788886000957\",\"tokenNumber\":\"TKN-907471\",\"farmerId\":\"30918274\",\"farmerName\":\"Rajesh Singh\",\"mandiId\":\"MANDI01\",\"mandiName\":\"Warangal Agriculture Market\",\"cropName\":\"Paddy (Rice / వరి / धान)\",\"date\":\"2026-09-09\",\"timeSlot\":\"09:00 - 09:30\"}",
+      "farmerId": "30918274",
+      "farmerName": "Rajesh Singh",
+      "mobile": "9988776655",
+      "mandiId": "MANDI01",
+      "mandiName": "Warangal Agriculture Market",
+      "cropId": "crop-1",
+      "cropName": "Paddy (Rice / వరి / धान)",
+      "date": "2026-09-09",
+      "timeSlot": "09:00 - 09:30",
+      "expectedQty": 42,
+      "actualQty": null,
+      "arrivalStatus": "Pending",
+      "procurementStatus": "Pending",
+      "paymentStatus": "Pending",
+      "createdAt": "2026-09-08T16:46:40.957Z"
+    },
+    {
+      "id": "BK-1788886931154",
+      "tokenNumber": "TKN-430488",
+      "qrPayload": "{\"bookingId\":\"BK-1788886931154\",\"tokenNumber\":\"TKN-430488\",\"farmerId\":\"62790037\",\"farmerName\":\"Sita Devi\",\"mandiId\":\"MANDI01\",\"mandiName\":\"Warangal Agriculture Market\",\"cropName\":\"Paddy (Rice / వరి / धान)\",\"date\":\"2026-09-13\",\"timeSlot\":\"09:00 - 09:30\"}",
+      "farmerId": "62790037",
+      "farmerName": "Sita Devi",
+      "mobile": "9503090869",
+      "mandiId": "MANDI01",
+      "mandiName": "Warangal Agriculture Market",
+      "cropId": "crop-1",
+      "cropName": "Paddy (Rice / వరి / धान)",
+      "date": "2026-09-13",
+      "timeSlot": "09:00 - 09:30",
+      "expectedQty": 55.5,
+      "actualQty": null,
+      "arrivalStatus": "Pending",
+      "procurementStatus": "Pending",
+      "paymentStatus": "Pending",
+      "source": "WEB",
+      "createdAt": "2026-09-08T17:02:11.154Z"
+    },
+    {
+      "id": "BK-1788886931161",
+      "tokenNumber": "TKN-217488",
+      "qrPayload": "{\"bookingId\":\"BK-1788886931161\",\"tokenNumber\":\"TKN-217488\",\"farmerId\":\"24463059\",\"farmerName\":\"Voice Caller Farmer\",\"mandiId\":\"MANDI01\",\"mandiName\":\"Warangal Agriculture Market\",\"cropName\":\"Cotton (పత్తి / कपास)\",\"date\":\"2026-09-13\",\"timeSlot\":\"10:00 - 10:30\"}",
+      "farmerId": "24463059",
+      "farmerName": "Voice Caller Farmer",
+      "mobile": "9525739928",
+      "mandiId": "MANDI01",
+      "mandiName": "Warangal Agriculture Market",
+      "cropId": "crop-3",
+      "cropName": "Cotton (పత్తి / कपास)",
+      "date": "2026-09-13",
+      "timeSlot": "10:00 - 10:30",
+      "expectedQty": 30,
+      "actualQty": null,
+      "arrivalStatus": "Pending",
+      "procurementStatus": "Pending",
+      "paymentStatus": "Pending",
+      "source": "VOICE_IVR",
+      "createdAt": "2026-09-08T17:02:11.161Z"
+    },
+    {
+      "id": "BK-1788886931167",
+      "tokenNumber": "TKN-859052",
+      "qrPayload": "{\"bookingId\":\"BK-1788886931167\",\"tokenNumber\":\"TKN-859052\",\"farmerId\":\"24296679\",\"farmerName\":\"Anand Kumar\",\"mandiId\":\"MANDI01\",\"mandiName\":\"Warangal Agriculture Market\",\"cropName\":\"Cotton (పత్తి / कपास)\",\"date\":\"2026-09-08\",\"timeSlot\":\"09:00 - 09:30\"}",
+      "farmerId": "24296679",
+      "farmerName": "Anand Kumar",
+      "mobile": "9997856481",
+      "mandiId": "MANDI01",
+      "mandiName": "Warangal Agriculture Market",
+      "cropId": "crop-3",
+      "cropName": "Cotton (పత్తి / कपास)",
+      "date": "2026-09-08",
+      "timeSlot": "09:00 - 09:30",
+      "expectedQty": 50,
+      "actualQty": 48.5,
+      "arrivalStatus": "Verified / Arrived",
+      "procurementStatus": "Completed",
+      "paymentStatus": "Completed",
+      "source": "WEB",
+      "createdAt": "2026-09-08T17:02:11.167Z"
+    }
+  ],
+  "procurements": [
+    {
+      "id": "BILL-1788886000973",
+      "bookingId": "BK-1001",
+      "tokenNumber": "TKN-849201",
+      "farmerId": "10029384",
+      "farmerName": "Ramesh Verma",
+      "mobile": "9876543210",
+      "mandiId": "MANDI01",
+      "mandiName": "Warangal Agriculture Market",
+      "cropName": "Paddy (Rice / వరి / धान)",
+      "date": "2026-09-08",
+      "timeSlot": "09:00 - 09:30",
+      "expectedQty": 50,
+      "actualQty": 47.5,
+      "ratePerQuintal": 2300,
+      "totalAmount": 109250,
+      "billedBy": "Suresh Kumar - Gate Officer",
+      "paymentRef": "TXN-95032448",
+      "paymentStatus": "Completed",
+      "createdTimestamp": "2026-09-08T16:46:40.973Z"
+    },
+    {
+      "id": "BILL-1788886931182",
+      "bookingId": "BK-1788886931167",
+      "tokenNumber": "TKN-859052",
+      "farmerId": "24296679",
+      "farmerName": "Anand Kumar",
+      "mobile": "9997856481",
+      "mandiId": "MANDI01",
+      "mandiName": "Warangal Agriculture Market",
+      "cropName": "Cotton (పత్తి / कपास)",
+      "date": "2026-09-08",
+      "timeSlot": "09:00 - 09:30",
+      "expectedQty": 50,
+      "actualQty": 48.5,
+      "ratePerQuintal": 7121,
+      "totalAmount": 345369,
+      "billedBy": "K. Venkatesh - Weighbridge Officer",
+      "paymentRef": "TXN-90935411",
+      "paymentStatus": "Completed",
+      "createdTimestamp": "2026-09-08T17:02:11.182Z"
+    }
+  ],
+  "dailyReports": [
+    {
+      "id": "RPT-MANDI01-2026-09-08",
+      "mandiId": "MANDI01",
+      "mandiName": "Warangal Agriculture Market",
+      "date": "2026-09-08",
+      "totalBooked": 3,
+      "totalVerified": 3,
+      "totalPending": 0,
+      "totalCompleted": 2,
+      "totalQty": 96,
+      "totalPayment": 454619,
+      "submittedAt": "2026-09-08T17:02:11.192Z"
+    }
+  ]
+}
