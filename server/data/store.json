@@ -10,7 +10,16 @@
       "bankDetails": "State Bank of India — Account ****4821 (IFSC: SBIN0004921)"
     },
     {
-      "id": "20491823",
+      "id": "10029001",
+      "name": "Ramesh Verma (Demo 1)",
+      "mobile": "9876543210",
+      "password": "password123",
+      "language": "EN",
+      "location": "Warangal, Telangana",
+      "bankDetails": "State Bank of India — Account ****4821 (IFSC: SBIN0004921)"
+    },
+    {
+      "id": "10029002",
       "name": "Lakshmi Narasimha",
       "mobile": "9123456789",
       "password": "password123",
@@ -19,7 +28,7 @@
       "bankDetails": "HDFC Bank — Account ****9102 (IFSC: HDFC0001029)"
     },
     {
-      "id": "30918274",
+      "id": "10029003",
       "name": "Rajesh Singh",
       "mobile": "9988776655",
       "password": "password123",
@@ -28,7 +37,7 @@
       "bankDetails": "Union Bank of India — Account ****3321 (IFSC: UBIN0532189)"
     },
     {
-      "id": "62790037",
+      "id": "10029004",
       "name": "Sita Devi",
       "mobile": "9503090869",
       "password": "password123",
@@ -37,16 +46,7 @@
       "bankDetails": "SBI A/C ****7788"
     },
     {
-      "id": "24463059",
-      "name": "Voice Caller Farmer",
-      "mobile": "9525739928",
-      "password": "password123",
-      "language": "EN",
-      "location": "Phone IVR Registration",
-      "bankDetails": "Bank Account **** (IFSC: SBIN0001234)"
-    },
-    {
-      "id": "24296679",
+      "id": "10029005",
       "name": "Anand Kumar",
       "mobile": "9997856481",
       "password": "password123",
@@ -263,6 +263,69 @@
       "paymentStatus": "Completed",
       "source": "WEB",
       "createdAt": "2026-09-08T17:02:11.167Z"
+    },
+    {
+      "id": "BK-1788926780740",
+      "tokenNumber": "TKN-171960",
+      "qrPayload": "{\"bookingId\":\"BK-1788926780740\",\"tokenNumber\":\"TKN-171960\",\"farmerId\":\"10029384\",\"farmerName\":\"Ramesh Verma\",\"mandiId\":\"MANDI02\",\"mandiName\":\"Nizamabad APMC Mandi\",\"cropName\":\"Wheat (గోధుమలు / गेहूं)\",\"date\":\"2026-09-17\",\"timeSlot\":\"10:00 - 10:30\"}",
+      "farmerId": "10029384",
+      "farmerName": "Ramesh Verma",
+      "mobile": "9876543210",
+      "mandiId": "MANDI02",
+      "mandiName": "Nizamabad APMC Mandi",
+      "cropId": "crop-2",
+      "cropName": "Wheat (గోధుమలు / गेहूं)",
+      "date": "2026-09-17",
+      "timeSlot": "10:00 - 10:30",
+      "expectedQty": 70,
+      "actualQty": null,
+      "arrivalStatus": "Pending",
+      "procurementStatus": "Pending",
+      "paymentStatus": "Pending",
+      "source": "WEB",
+      "createdAt": "2026-09-09T04:06:20.740Z"
+    },
+    {
+      "id": "BK-1788926954069",
+      "tokenNumber": "TKN-338580",
+      "qrPayload": "{\"bookingId\":\"BK-1788926954069\",\"tokenNumber\":\"TKN-338580\",\"farmerId\":\"10029384\",\"farmerName\":\"Ramesh Verma\",\"mandiId\":\"MANDI02\",\"mandiName\":\"Nizamabad APMC Mandi\",\"cropName\":\"Wheat (గోధుమలు / गेहूं)\",\"date\":\"2026-09-09\",\"timeSlot\":\"10:30 - 11:00\"}",
+      "farmerId": "10029384",
+      "farmerName": "Ramesh Verma",
+      "mobile": "9876543210",
+      "mandiId": "MANDI02",
+      "mandiName": "Nizamabad APMC Mandi",
+      "cropId": "crop-2",
+      "cropName": "Wheat (గోధుమలు / गेहूं)",
+      "date": "2026-09-09",
+      "timeSlot": "10:30 - 11:00",
+      "expectedQty": null,
+      "actualQty": 40,
+      "arrivalStatus": "Verified / Arrived",
+      "procurementStatus": "Completed",
+      "paymentStatus": "Completed",
+      "source": "WEB",
+      "createdAt": "2026-09-09T04:09:14.069Z"
+    },
+    {
+      "id": "BK-1788927311668",
+      "tokenNumber": "TKN-926127",
+      "qrPayload": "{\"bookingId\":\"BK-1788927311668\",\"tokenNumber\":\"TKN-926127\",\"farmerId\":\"10029384\",\"farmerName\":\"Ramesh Verma\",\"mandiId\":\"MANDI02\",\"mandiName\":\"Nizamabad APMC Mandi\",\"cropName\":\"Wheat (గోధుమలు / गेहूं)\",\"date\":\"2026-09-10\",\"timeSlot\":\"15:00 - 15:30\"}",
+      "farmerId": "10029384",
+      "farmerName": "Ramesh Verma",
+      "mobile": "9876543210",
+      "mandiId": "MANDI02",
+      "mandiName": "Nizamabad APMC Mandi",
+      "cropId": "crop-2",
+      "cropName": "Wheat (గోధుమలు / गेहूं)",
+      "date": "2026-09-10",
+      "timeSlot": "15:00 - 15:30",
+      "expectedQty": null,
+      "actualQty": null,
+      "arrivalStatus": "Pending",
+      "procurementStatus": "Pending",
+      "paymentStatus": "Pending",
+      "source": "WEB",
+      "createdAt": "2026-09-09T04:15:11.668Z"
     }
   ],
   "procurements": [
@@ -307,6 +370,27 @@
       "paymentRef": "TXN-90935411",
       "paymentStatus": "Completed",
       "createdTimestamp": "2026-09-08T17:02:11.182Z"
+    },
+    {
+      "id": "BILL-1788927026836",
+      "bookingId": "BK-1788926954069",
+      "tokenNumber": "TKN-338580",
+      "farmerId": "10029384",
+      "farmerName": "Ramesh Verma",
+      "mobile": "9876543210",
+      "mandiId": "MANDI02",
+      "mandiName": "Nizamabad APMC Mandi",
+      "cropName": "Wheat (గోధుమలు / गेहूं)",
+      "date": "2026-09-09",
+      "timeSlot": "10:30 - 11:00",
+      "expectedQty": null,
+      "actualQty": 40,
+      "ratePerQuintal": 2275,
+      "totalAmount": 91000,
+      "billedBy": "Rajesh Sharma - Mandi Officer",
+      "paymentRef": "TXN-10367831",
+      "paymentStatus": "Completed",
+      "createdTimestamp": "2026-09-09T04:10:26.836Z"
     }
   ],
   "dailyReports": [
@@ -322,6 +406,19 @@
       "totalQty": 96,
       "totalPayment": 454619,
       "submittedAt": "2026-09-08T17:02:11.192Z"
+    },
+    {
+      "id": "RPT-MANDI02-2026-09-09",
+      "mandiId": "MANDI02",
+      "mandiName": "Nizamabad APMC Mandi",
+      "date": "2026-09-09",
+      "totalBooked": 1,
+      "totalVerified": 1,
+      "totalPending": 0,
+      "totalCompleted": 1,
+      "totalQty": 40,
+      "totalPayment": 91000,
+      "submittedAt": "2026-09-09T04:18:40.458Z"
     }
   ]
 }

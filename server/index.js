@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { WebSocketServer, WebSocket } from 'ws';
 import http from 'http';
+import twilio from 'twilio';
 import { db } from './db.js';
 
 const app = express();
@@ -9,6 +10,7 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 const server = http.createServer(app);
 
@@ -305,7 +307,157 @@ app.get('/api/history/mandi/:mandiId', (req, res) => {
   res.json(history);
 });
 
+// --- TWILIO VOICE IVR ROUTES ---
 
+// 1. Initial Call Entrypoint: Welcome & Gather 8-digit Farmer ID
+app.post('/api/voice/incoming', (req, res) => {
+  const twiml = new twilio.twiml.VoiceResponse();
+
+  const gather = twiml.gather({
+    action: '/api/voice/farmer-id',
+    method: 'POST',
+    numDigits: 8,
+    timeout: 10
+  });
+  gather.say('Welcome to SIH26032 Farmer Voice Service. Please enter your 8-digit Farmer ID using your phone keypad.');
+
+  // Fallback if caller enters no digits before timeout
+  twiml.say('We did not receive any input. Please call back and try again. Goodbye.');
+  twiml.hangup();
+
+  res.type('text/xml');
+  res.send(twiml.toString());
+});
+
+// 2. Validate & Lookup 8-digit Farmer ID
+app.post('/api/voice/farmer-id', (req, res) => {
+  const digits = req.body && req.body.Digits ? req.body.Digits.trim() : '';
+  const twiml = new twilio.twiml.VoiceResponse();
+
+  // Validate that the value contains exactly 8 digits
+  if (/^\d{8}$/.test(digits)) {
+    const farmer = db.getFarmerById(digits);
+
+    if (farmer) {
+      // Farmer found: Welcome farmer by name
+      twiml.say(`Thank you. Welcome, ${farmer.name}. Your Farmer ID has been verified.`);
+    } else {
+      // Farmer ID does not exist in the database
+      const gather = twiml.gather({
+        action: '/api/voice/farmer-id',
+        method: 'POST',
+        numDigits: 8,
+        timeout: 10
+      });
+      gather.say('We could not find that Farmer ID. Please enter your 8-digit Farmer ID again.');
+
+      // Fallback if no digits entered
+      twiml.say('We did not receive any input. Goodbye.');
+      twiml.hangup();
+    }
+  } else {
+    // If input is not 8 digits (invalid format)
+    const gather = twiml.gather({
+      action: '/api/voice/farmer-id',
+      method: 'POST',
+      numDigits: 8,
+      timeout: 10
+    });
+    gather.say('That was not a valid 8-digit Farmer ID. Please enter your 8-digit Farmer ID again.');
+
+    // Fallback if no digits entered
+    twiml.say('We did not receive any input. Goodbye.');
+    twiml.hangup();
+  }
+
+  res.type('text/xml');
+  res.send(twiml.toString());
+});
+
+// --- EXOTEL PASSTHRU VOICE ROUTE ---
+// In-memory session store for tracking active Exotel IVR calls by CallSid / CallFrom
+const exotelSessions = new Map();
+
+// Crop Mapping (1-6 as configured in Exotel IVR)
+const CROP_MAP = {
+  '1': { id: 'crop-1', name: 'Paddy' },
+  '2': { id: 'crop-2', name: 'Wheat' },
+  '3': { id: 'crop-3', name: 'Cotton' },
+  '4': { id: 'crop-4', name: 'Maize' },
+  '5': { id: 'crop-5', name: 'Pulses' },
+  '6': { id: 'crop-6', name: 'Gram' }
+};
+
+// Webhook endpoint for Exotel Passthru integration testing (supports both GET and POST)
+const handleExotelRequest = (req, res) => {
+  const rawDigits = req.query ? req.query.digits : undefined;
+  const callSid = req.query.CallSid || req.body?.CallSid || req.query.CallFrom || req.body?.CallFrom || 'DEFAULT_SESSION';
+  const sessionKey = callSid.trim();
+
+  // Exotel sends digits as a quoted string (e.g. '"10029384"' or '"3"'). Normalize to unquoted string.
+  const extractedDigits = typeof rawDigits === 'string'
+    ? rawDigits.replace(/["']/g, '').trim()
+    : (rawDigits !== undefined && rawDigits !== null ? String(rawDigits).replace(/["']/g, '').trim() : '');
+
+  console.log('====================================================');
+  console.log('📞 [EXOTEL PASSTHRU] Incoming Request Received');
+  console.log('Session Key (CallSid/From):', sessionKey);
+  console.log('Raw Exotel digits:', rawDigits);
+  console.log('Extracted Digits:', extractedDigits);
+
+  let session = exotelSessions.get(sessionKey) || { farmerId: null, farmerName: null, selectedCrop: null, stage: 'INIT' };
+
+  // Distinguish input type by pattern & session state
+  if (/^\d{8}$/.test(extractedDigits)) {
+    // 1. Farmer ID Entry Stage (8 digits)
+    const farmer = db.getFarmerById(extractedDigits);
+    const isValidFarmerId = Boolean(farmer);
+
+    if (isValidFarmerId) {
+      session = {
+        farmerId: farmer.id,
+        farmerName: farmer.name,
+        selectedCrop: null,
+        stage: 'AWAITING_CROP'
+      };
+      exotelSessions.set(sessionKey, session);
+      console.log('✅ Farmer ID Verified:', farmer.id);
+      console.log('Farmer Name:', farmer.name);
+      console.log('Session Stage Updated -> AWAITING_CROP');
+    } else {
+      console.log('❌ Farmer ID Not Found in Database:', extractedDigits);
+    }
+  } else if (/^[1-6]$/.test(extractedDigits)) {
+    // 2. Crop Selection Stage (Digits 1 to 6)
+    if (session.farmerId) {
+      const cropInfo = CROP_MAP[extractedDigits];
+      session.selectedCrop = cropInfo;
+      session.stage = 'CROP_SELECTED';
+      exotelSessions.set(sessionKey, session);
+
+      console.log('🌽 Crop Selection Received:', extractedDigits, `(${cropInfo.name})`);
+      console.log('✅ Active IVR Session State:', {
+        farmerId: session.farmerId,
+        farmerName: session.farmerName,
+        selectedCrop: session.selectedCrop
+      });
+    } else {
+      console.log('⚠️ Crop selection received (' + extractedDigits + '), but no verified Farmer ID session exists for this call.');
+    }
+  } else {
+    console.log('ℹ️ Received input outside expected formats (neither 8-digit Farmer ID nor 1-6 crop choice):', extractedDigits);
+  }
+
+  console.log('====================================================');
+
+  res.status(200).json({
+    success: true,
+    message: 'Exotel Passthru request received successfully'
+  });
+};
+
+app.get('/api/voice/exotel', handleExotelRequest);
+app.post('/api/voice/exotel', handleExotelRequest);
 
 // Start Server
 server.listen(PORT, () => {
