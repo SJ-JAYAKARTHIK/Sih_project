@@ -1,64 +1,68 @@
 import React from 'react';
-import { Users, Sprout, CheckCircle2, TrendingUp } from 'lucide-react';
 
 export const FarmerAnalysis = ({ cropStats, totalFarmers, todayBooked, todayVerified, todayCompleted }) => {
   return (
     <div>
-      {/* Overview Metric Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div className="card">
-          <div style={{ fontSize: '0.8rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: 700 }}>Total Registered Farmers</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#111827', margin: '0.25rem 0' }}>{totalFarmers}</div>
-          <div style={{ fontSize: '0.78rem', color: '#6B7280' }}>Across state divisions</div>
+      {/* KPI Row */}
+      <div className="kpi-grid-auto" style={{ marginBottom: '1.5rem' }}>
+        <div className="kpi-card">
+          <div className="kpi-label">Total Registered Farmers</div>
+          <div className="kpi-value">{totalFarmers}</div>
+          <div className="kpi-sub">Across state divisions</div>
         </div>
 
-        <div className="card">
-          <div style={{ fontSize: '0.8rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: 700 }}>Farmers Booked Slots Today</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#D97706', margin: '0.25rem 0' }}>{todayBooked}</div>
-          <div style={{ fontSize: '0.78rem', color: '#B45309' }}>Confirmed slot reservations</div>
+        <div className="kpi-card" style={{ borderLeft: '3px solid var(--warning)' }}>
+          <div className="kpi-label" style={{ color: 'var(--status-warning-text)' }}>Booked Today</div>
+          <div className="kpi-value" style={{ color: 'var(--warning)' }}>{todayBooked}</div>
+          <div className="kpi-sub">Confirmed slot reservations</div>
         </div>
 
-        <div className="card">
-          <div style={{ fontSize: '0.8rem', color: '#065F46', textTransform: 'uppercase', fontWeight: 700 }}>Farmer Turnout Rate</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#065F46', margin: '0.25rem 0' }}>
+        <div className="kpi-card" style={{ borderLeft: '3px solid var(--accent)' }}>
+          <div className="kpi-label" style={{ color: 'var(--status-success-text)' }}>Farmer Turnout Rate</div>
+          <div className="kpi-value" style={{ color: 'var(--status-success-text)' }}>
             {todayBooked > 0 ? Math.round((todayVerified / todayBooked) * 100) : 0}%
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#059669' }}>{todayVerified} arrived of {todayBooked} booked</div>
+          <div className="kpi-sub">{todayVerified} arrived of {todayBooked} booked</div>
         </div>
 
-        <div className="card">
-          <div style={{ fontSize: '0.8rem', color: '#92400E', textTransform: 'uppercase', fontWeight: 700 }}>Procurement Fulfilled</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#92400E', margin: '0.25rem 0' }}>{todayCompleted}</div>
-          <div style={{ fontSize: '0.78rem', color: '#B45309' }}>Payment & bills completed</div>
+        <div className="kpi-card" style={{ borderLeft: '3px solid var(--primary)' }}>
+          <div className="kpi-label" style={{ color: 'var(--primary)' }}>Procurement Fulfilled</div>
+          <div className="kpi-value" style={{ color: 'var(--primary)' }}>{todayCompleted}</div>
+          <div className="kpi-sub">Payment &amp; bills completed</div>
         </div>
       </div>
 
-      {/* Crop-wise Procurement Distribution */}
+      {/* Crop breakdown */}
       <div className="card">
-        <h3 style={{ margin: '0 0 1rem', fontSize: '1.25rem' }}>Crop-Wise Procurement Breakdown</h3>
+        <div className="section-header">
+          <div>
+            <h3 className="section-title">Crop-Wise Procurement Breakdown</h3>
+            <div className="section-subtitle">Quantity and payment by crop variety today</div>
+          </div>
+        </div>
 
         <div className="table-container">
           <table className="custom-table">
             <thead>
               <tr>
-                <th>Crop Name</th>
-                <th>Total Transactions</th>
-                <th>Total Quantity Procured</th>
-                <th>Procurement Value Processed</th>
+                <th>Crop</th>
+                <th>Transactions</th>
+                <th>Total Qty Procured</th>
+                <th>Procurement Value</th>
               </tr>
             </thead>
             <tbody>
               {cropStats.map((crop) => (
                 <tr key={crop.cropId}>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, color: '#111827' }}>
-                      <span style={{ fontSize: '1.4rem' }}>{crop.icon}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
+                      <span style={{ fontSize: '1.25rem' }}>{crop.icon}</span>
                       <span>{crop.cropName}</span>
                     </div>
                   </td>
-                  <td><strong>{crop.count} Procurements</strong></td>
-                  <td><strong style={{ color: '#059669' }}>{crop.totalQty} Quintals</strong></td>
-                  <td><strong style={{ color: '#D97706' }}>₹{crop.totalPayment.toLocaleString()}</strong></td>
+                  <td><strong>{crop.count}</strong></td>
+                  <td><strong style={{ color: 'var(--status-success-text)' }}>{crop.totalQty} Quintals</strong></td>
+                  <td><strong>₹{crop.totalPayment.toLocaleString()}</strong></td>
                 </tr>
               ))}
             </tbody>

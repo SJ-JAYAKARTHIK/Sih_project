@@ -47,45 +47,45 @@ export const EndOfDayReport = ({ mandiId, mandiName, bookings, dateStr, onReport
   };
 
   return (
-    <div className="card" style={{ backgroundColor: '#FFFBEB', borderColor: '#FCD34D', marginBottom: '1.5rem' }}>
+    <div className="card" style={{ borderLeft: '3px solid var(--primary)', marginBottom: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h4 style={{ margin: 0, color: '#92400E', fontSize: '1.1rem' }}>End-of-Day Mandi Summary Update</h4>
-          <p style={{ color: '#B45309', margin: '0.25rem 0 0', fontSize: '0.85rem' }}>
+          <h4 style={{ margin: 0, color: 'var(--primary)', fontSize: '1.05rem', fontWeight: 700 }}>End-of-Day Mandi Summary</h4>
+          <p style={{ color: 'var(--text-secondary)', margin: '0.2rem 0 0', fontSize: '0.82rem' }}>
             Submit today's automated operational report to the Admin Portal.
           </p>
         </div>
 
         <button
-          className="btn btn-primary"
+          className="btn btn-primary btn-sm"
           onClick={handleSubmitEOD}
           disabled={loading}
         >
-          <Send size={16} /> {loading ? 'Submitting Report...' : 'Submit EOD Daily Report to Admin'}
+          <Send size={15} /> {loading ? 'Submitting...' : 'Submit EOD Report to Admin'}
         </button>
       </div>
 
       {error && (
         <div className="alert alert-danger" style={{ marginTop: '1rem', marginBottom: 0 }}>
-          <AlertCircle size={18} />
+          <AlertCircle size={16} />
           <span>{error}</span>
         </div>
       )}
 
       {success && (
         <div className="alert alert-success" style={{ marginTop: '1rem', marginBottom: 0 }}>
-          <CheckCircle2 size={18} />
+          <CheckCircle2 size={16} />
           <span>{success}</span>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px border #FDE68A' }}>
-        <div><span style={{ fontSize: '0.75rem', color: '#B45309' }}>Total Booked:</span> <strong>{totalBooked}</strong></div>
-        <div><span style={{ fontSize: '0.75rem', color: '#B45309' }}>Verified Arrivals:</span> <strong>{verifiedCount}</strong></div>
-        <div><span style={{ fontSize: '0.75rem', color: '#B45309' }}>Pending Arrivals:</span> <strong>{pendingArrivals}</strong></div>
-        <div><span style={{ fontSize: '0.75rem', color: '#B45309' }}>Completed:</span> <strong>{completedCount}</strong></div>
-        <div><span style={{ fontSize: '0.75rem', color: '#B45309' }}>Total Qty:</span> <strong>{totalQty} Qtl</strong></div>
-        <div><span style={{ fontSize: '0.75rem', color: '#B45309' }}>Total Payment:</span> <strong>₹{totalPayment.toLocaleString()}</strong></div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.5rem 0.75rem', marginTop: '1rem', paddingTop: '0.875rem', borderTop: '1px solid var(--border)', fontSize: '0.8rem' }}>
+        <div><span style={{ color: 'var(--text-muted)' }}>Total Booked:</span> <strong>{totalBooked}</strong></div>
+        <div><span style={{ color: 'var(--text-muted)' }}>Verified:</span> <strong style={{ color: 'var(--status-success-text)' }}>{verifiedCount}</strong></div>
+        <div><span style={{ color: 'var(--text-muted)' }}>Pending:</span> <strong>{pendingArrivals}</strong></div>
+        <div><span style={{ color: 'var(--text-muted)' }}>Completed:</span> <strong style={{ color: 'var(--primary)' }}>{completedCount}</strong></div>
+        <div><span style={{ color: 'var(--text-muted)' }}>Total Qty:</span> <strong style={{ color: 'var(--status-success-text)' }}>{totalQty} Qtl</strong></div>
+        <div><span style={{ color: 'var(--text-muted)' }}>Est. Payment:</span> <strong>₹{totalPayment.toLocaleString()}</strong></div>
       </div>
     </div>
   );

@@ -3,15 +3,320 @@ import { useApp } from '../../context/AppContext';
 import { MandiAnalysis } from './MandiAnalysis';
 import { FarmerAnalysis } from './FarmerAnalysis';
 import { DailyReports } from './DailyReports';
-import { Shield, Building2, Users, Calendar, CheckCircle2, Clock, Scale, CreditCard, RefreshCw } from 'lucide-react';
+import { AdminComplaints } from './AdminComplaints';
+import {
+  Shield, Building2, Users, Calendar, CheckCircle2,
+  Scale, CreditCard, RefreshCw, AlertTriangle,
+  LayoutDashboard, Store, XCircle, FileText
+} from 'lucide-react';
+
+/* ── Custom Rupee Icon for Payment Card ── */
+const RupeeIcon = ({ color = "#2563EB" }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 3h12M6 8h12M6 13l8.5 8M6 8a4.5 4.5 0 0 0 0 9h1" />
+  </svg>
+);
+
+/* ── Custom Red Hazard Icon for Pending Card ── */
+const RedHazardIcon = ({ color = "#DC2626" }) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="2" />
+    <circle cx="12" cy="12" r="2.5" fill={color} />
+    <path d="M12 9.5V4" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    <path d="M9.8 13.2L5 16" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    <path d="M14.2 13.2L19 16" stroke={color} strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
+/* ── 2-Leaf Watermark for Stat Cards matching reference image ── */
+const CardLeafWatermark = () => (
+  <svg
+    width="70"
+    height="75"
+    viewBox="0 0 70 75"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    style={{
+      position: 'absolute',
+      right: '12px',
+      bottom: '8px',
+      opacity: 0.65,
+      pointerEvents: 'none'
+    }}
+  >
+    <path
+      d="M20 68 C 30 48, 45 30, 56 12"
+      stroke="#CBE4D3"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+    />
+    <path
+      d="M32 50 C 18 44, 10 32, 20 22 C 30 30, 32 40, 32 50 Z"
+      fill="#D9ECE0"
+    />
+    <path
+      d="M56 12 C 48 4, 38 8, 40 18 C 50 18, 54 14, 56 12 Z"
+      fill="#D9ECE0"
+    />
+  </svg>
+);
+
+/* ── Reusable OverviewBanner Component ── */
+export const OverviewBanner = ({ selectedDate, onDateChange, onRefresh }) => (
+  <div style={{
+    backgroundColor: '#EDF6F0',
+    borderRadius: '16px',
+    padding: '20px 28px',
+    marginBottom: '20px',
+    border: '1px solid #D2E7D6',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.02)',
+    position: 'relative',
+    overflow: 'hidden',
+    minHeight: '88px'
+  }}>
+    {/* Left Title Box */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', zIndex: 1 }}>
+      <div style={{
+        width: '46px',
+        height: '46px',
+        borderRadius: '12px',
+        backgroundColor: '#DCFCE7',
+        border: '1px solid #86EFAC',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+      }}>
+        <img
+          src="/assets/admin_portal_assets/07_overview_banner_icon.png"
+          alt="Shield Icon"
+          style={{ width: '28px', height: '28px', objectFit: 'contain' }}
+          onError={(e) => {
+            e.target.style.display = 'none';
+          }}
+        />
+        <Shield size={24} color="#15803D" style={{ display: 'none' }} />
+      </div>
+      <div>
+        <h1 style={{ margin: 0, fontSize: '1.38rem', color: '#0F532B', fontWeight: 800, letterSpacing: '-0.01em' }}>
+          Admin Portal — State Overview
+        </h1>
+        <div style={{ fontSize: '0.86rem', color: '#52635B', marginTop: '2px', fontWeight: 500 }}>
+          Real-time monitoring across all mandis &amp; procurement activities
+        </div>
+      </div>
+    </div>
+
+    {/* Right Controls */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', zIndex: 1, flexWrap: 'wrap' }}>
+      {/* Date Selector Pill */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        backgroundColor: '#FFFFFF',
+        border: '1px solid #C8E3CE',
+        padding: '6px 14px',
+        borderRadius: '10px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+      }}>
+        <Calendar size={16} color="#15803D" />
+        <input
+          type="date"
+          style={{
+            border: 'none',
+            background: 'transparent',
+            fontWeight: 700,
+            fontSize: '0.88rem',
+            outline: 'none',
+            color: '#0F532B',
+            cursor: 'pointer',
+            fontFamily: 'inherit'
+          }}
+          value={selectedDate}
+          onChange={(e) => onDateChange(e.target.value)}
+        />
+      </div>
+
+      {/* Refresh Button */}
+      <button
+        onClick={onRefresh}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #C8E3CE',
+          color: '#15803D',
+          padding: '7px 15px',
+          borderRadius: '10px',
+          fontWeight: 700,
+          fontSize: '0.88rem',
+          cursor: 'pointer',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+          transition: 'all 0.15s ease'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F0FAF2'}
+        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
+      >
+        <RefreshCw size={15} color="#15803D" />
+        <span>Refresh</span>
+      </button>
+    </div>
+  </div>
+);
+
+/* ── Reusable DashboardTabs Component ── */
+export const DashboardTabs = ({ tabs, activeTab, onTabChange }) => (
+  <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: '24px',
+    marginTop: '16px',
+    marginBottom: '24px',
+    borderBottom: '1px solid #E2E8F0',
+    paddingBottom: '0',
+    overflowX: 'auto'
+  }}>
+    {tabs.map(({ key, label, icon: Icon }) => {
+      const isActive = activeTab === key;
+      return (
+        <button
+          key={key}
+          onClick={() => onTabChange(key)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 4px 12px 4px',
+            border: 'none',
+            backgroundColor: 'transparent',
+            color: isActive ? '#0F532B' : '#52635B',
+            fontWeight: isActive ? 800 : 600,
+            fontSize: '0.92rem',
+            cursor: 'pointer',
+            position: 'relative',
+            borderBottom: isActive ? '3px solid #0F532B' : '3px solid transparent',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <Icon size={18} color={isActive ? '#0F532B' : '#52635B'} strokeWidth={isActive ? 2.5 : 2} />
+          <span>{label}</span>
+        </button>
+      );
+    })}
+  </div>
+);
+
+/* ── Reusable KPICard Component ── */
+export const KPICard = ({
+  title,
+  value,
+  description,
+  accentColor,
+  iconBgColor,
+  iconColor,
+  icon: Icon
+}) => (
+  <div style={{
+    backgroundColor: '#FFFFFF',
+    borderRadius: '16px',
+    border: '1px solid #E2E8F0',
+    borderLeft: `4px solid ${accentColor}`,
+    padding: '18px 22px',
+    position: 'relative',
+    overflow: 'hidden',
+    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.02)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px'
+  }}>
+    <CardLeafWatermark />
+    <div style={{
+      width: '46px',
+      height: '46px',
+      borderRadius: '50%',
+      backgroundColor: iconBgColor,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0
+    }}>
+      <Icon size={22} color={iconColor} />
+    </div>
+    <div>
+      <div style={{ fontSize: '11px', fontWeight: 800, color: iconColor, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+        {title}
+      </div>
+      <div style={{ fontSize: '26px', fontWeight: 800, color: title === "TODAY'S BOOKINGS" ? '#EA580C' : title === 'VERIFIED ARRIVALS' ? '#059669' : title === 'PENDING / NOT ARRIVED' ? '#DC2626' : title === 'COMPLETED PROCUREMENTS' ? '#9333EA' : title === 'TOTAL QTY PROCURED' ? '#0D9488' : title === 'TOTAL PAYMENT PROCESSED' ? '#2563EB' : '#11382B', lineHeight: 1.1, margin: '2px 0' }}>
+        {value}
+      </div>
+      <div style={{ fontSize: '12px', color: '#64748B' }}>
+        {description}
+      </div>
+    </div>
+  </div>
+);
+
+/* ── Bottom Corner Leaf Illustration Component ── */
+export const BottomLeafDecoration = () => (
+  <div style={{
+    position: 'absolute',
+    bottom: '-25px',
+    left: '-20px',
+    right: '-20px',
+    pointerEvents: 'none',
+    zIndex: 0,
+    display: 'flex',
+    justifyContent: 'space-between'
+  }}>
+    <img
+      src="/assets/admin_portal_assets/26_bottom_left_decoration.png"
+      alt="Bottom Left Decoration"
+      style={{ width: '260px', height: 'auto', objectFit: 'contain' }}
+      onError={(e) => { e.target.style.display = 'none'; }}
+    />
+    <img
+      src="/assets/admin_portal_assets/27_bottom_right_decoration.png"
+      alt="Bottom Right Decoration"
+      style={{ width: '260px', height: 'auto', objectFit: 'contain' }}
+      onError={(e) => { e.target.style.display = 'none'; }}
+    />
+  </div>
+);
+
+const defaultAdminStats = {
+  date: new Date().toISOString().split('T')[0],
+  totalMandis: 4,
+  totalFarmers: 6,
+  todayBooked: 1,
+  todayVerified: 0,
+  todayPending: 1,
+  todayCompleted: 0,
+  totalQtyProcuredToday: 0,
+  totalPaymentAmountToday: 0,
+  mandiStats: [
+    { mandiId: 'MANDI01', mandiName: 'Warangal Agriculture Market', location: 'Enugulagadda, Warangal, Telangana', booked: 1, verified: 1, pending: 1, completed: 0, totalQty: 0, totalPayment: 0 },
+    { mandiId: 'MANDI02', mandiName: 'Nizamabad APMC Mandi', location: 'Market Yard, Nizamabad, Telangana', booked: 0, verified: 1, pending: 1, completed: 0, totalQty: 0, totalPayment: 0 },
+    { mandiId: 'MANDI03', mandiName: 'Guntur Grain Yard', location: 'Guntur Central, Andhra Pradesh', booked: 0, verified: 1, pending: 1, completed: 0, totalQty: 0, totalPayment: 0 },
+    { mandiId: 'MANDI04', mandiName: 'Khammam Procurement Yard', location: 'Wyra Road, Khammam, Telangana', booked: 0, verified: 1, pending: 1, completed: 0, totalQty: 0, totalPayment: 0 },
+  ],
+  cropStats: [
+    { cropId: 'crop-1', cropName: 'Paddy / Rice (వరి / धान)', ratePerQuintal: 2300, totalBooked: 1, totalQty: 0, totalPayment: 0 },
+    { cropId: 'crop-2', cropName: 'Wheat (గోధుమలు / गेहूं)', ratePerQuintal: 2275, totalBooked: 0, totalQty: 0, totalPayment: 0 }
+  ],
+  dailyReports: []
+};
 
 export const AdminDashboard = () => {
   const { adminUser, refreshTrigger, triggerRefresh } = useApp();
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // Tab views: 'dashboard' | 'mandi' | 'farmer' | 'reports'
+  const [stats, setStats] = useState(defaultAdminStats);
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
@@ -19,208 +324,194 @@ export const AdminDashboard = () => {
   }, [selectedDate, refreshTrigger]);
 
   const fetchAdminStats = async () => {
-    setLoading(true);
     try {
       const res = await fetch(`/api/admin/stats?date=${selectedDate}`);
-      const data = await res.json();
-      setStats(data);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data === 'object') {
+          setStats(data);
+        }
+      }
     } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
+      console.error('Error fetching admin stats:', e);
     }
   };
 
-  if (loading && !stats) {
-    return <div style={{ textAlign: 'center', padding: '3rem' }}>Loading Admin Portal Analytics...</div>;
-  }
+  const currentStats = stats || defaultAdminStats;
+
+  const tabs = [
+    { key: 'dashboard', label: 'Executive Dashboard', icon: LayoutDashboard },
+    { key: 'mandi', label: 'Mandi Analysis', icon: Building2 },
+    { key: 'farmer', label: 'Farmer Analysis', icon: Users },
+    { key: 'reports', label: `Reports (${currentStats?.dailyReports?.length || 0})`, icon: FileText },
+    { key: 'complaints', label: 'Complaints', icon: AlertTriangle },
+  ];
 
   return (
-    <div>
-      {/* Header Banner */}
-      <div className="card" style={{
-        backgroundColor: '#FFFFFF',
-        padding: '1.25rem 1.5rem',
-        marginBottom: '1.5rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '1rem'
+    <div className="admin-portal-wrapper" style={{
+      position: 'relative',
+      minHeight: '100vh',
+      backgroundColor: '#EDF5F0',
+      padding: '24px 35px 60px 35px'
+    }}>
+      <div style={{
+        maxWidth: '1640px',
+        margin: '0 auto',
+        position: 'relative',
+        zIndex: 1
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{
-            width: '52px',
-            height: '52px',
-            borderRadius: '12px',
-            backgroundColor: '#FEF3C7',
-            border: '1px solid #FCD34D',
-            color: '#D97706',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <Shield size={28} />
-          </div>
 
-          <div>
-            <h2 style={{ margin: 0, fontSize: '1.35rem', color: '#111827' }}>Admin Portal — State Overview</h2>
-            <div style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '0.2rem' }}>
-              Real-time monitoring across all mandis & farmer procurement activities
+        {/* ── Top Header Banner Component ── */}
+        <OverviewBanner
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          onRefresh={fetchAdminStats}
+        />
+
+        {/* ── Secondary Navigation Bar Tabs Component ── */}
+        <DashboardTabs
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+
+        {/* ═══════════════════════════════════════
+          TAB: EXECUTIVE DASHBOARD
+          ═══════════════════════════════════════ */}
+        {activeTab === 'dashboard' && (
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            {/* 8 Stat Cards Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: '18px',
+              marginBottom: '28px'
+            }}>
+              <KPICard
+                title="TOTAL MANDIS"
+                value={currentStats.totalMandis}
+                description="Connected procurement mandis"
+                accentColor="#10B981"
+                iconBgColor="#DCFCE7"
+                iconColor="#15803D"
+                icon={Store}
+              />
+
+              <KPICard
+                title="TOTAL FARMERS"
+                value={currentStats.totalFarmers}
+                description="Registered 8-digit accounts"
+                accentColor="#0EA5E9"
+                iconBgColor="#E0F2FE"
+                iconColor="#0284C7"
+                icon={Users}
+              />
+
+              <KPICard
+                title="TODAY'S BOOKINGS"
+                value={currentStats.todayBooked}
+                description={`Slot reservations for ${currentStats.date || selectedDate}`}
+                accentColor="#F97316"
+                iconBgColor="#FFEDD5"
+                iconColor="#EA580C"
+                icon={Calendar}
+              />
+
+              <KPICard
+                title="VERIFIED ARRIVALS"
+                value={currentStats.todayVerified}
+                description="Gate verified via QR / Token"
+                accentColor="#10B981"
+                iconBgColor="#D1FAE5"
+                iconColor="#059669"
+                icon={CheckCircle2}
+              />
+
+              <KPICard
+                title="PENDING / NOT ARRIVED"
+                value={currentStats.todayPending}
+                description="Booked farmers yet to arrive"
+                accentColor="#EF4444"
+                iconBgColor="#FEE2E2"
+                iconColor="#DC2626"
+                icon={RedHazardIcon}
+              />
+
+              <KPICard
+                title="COMPLETED PROCUREMENTS"
+                value={currentStats.todayCompleted}
+                description="Weighed & billed today"
+                accentColor="#A855F7"
+                iconBgColor="#F3E8FF"
+                iconColor="#9333EA"
+                icon={CheckCircle2}
+              />
+
+              <KPICard
+                title="TOTAL QTY PROCURED"
+                value={`${currentStats.totalQtyProcuredToday} qtl`}
+                description="Actual weighted quintals"
+                accentColor="#14B8A6"
+                iconBgColor="#CCFBF1"
+                iconColor="#0D9488"
+                icon={Scale}
+              />
+
+              <KPICard
+                title="TOTAL PAYMENT PROCESSED"
+                value={`₹${(currentStats.totalPaymentAmountToday || 0).toLocaleString()}`}
+                description="Confirmed transactions"
+                accentColor="#3B82F6"
+                iconBgColor="#DBEAFE"
+                iconColor="#2563EB"
+                icon={RupeeIcon}
+              />
             </div>
-          </div>
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', backgroundColor: '#F3F4F6', padding: '0.4rem 0.75rem', borderRadius: '8px' }}>
-            <Calendar size={16} color="#D97706" />
-            <input
-              type="date"
-              style={{ border: 'none', background: 'transparent', fontWeight: 600, fontSize: '0.875rem', outline: 'none' }}
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+            {/* Mandi Activity & Performance Table Component */}
+            <MandiAnalysis mandiStats={currentStats.mandiStats} />
+          </div>
+        )}
+
+        {/* TAB: MANDI ANALYSIS */}
+        {activeTab === 'mandi' && (
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <MandiAnalysis mandiStats={currentStats.mandiStats} />
+          </div>
+        )}
+
+        {/* TAB: FARMER ANALYSIS */}
+        {activeTab === 'farmer' && (
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <FarmerAnalysis
+              cropStats={currentStats.cropStats}
+              totalFarmers={currentStats.totalFarmers}
+              todayBooked={currentStats.todayBooked}
+              todayVerified={currentStats.todayVerified}
+              todayCompleted={currentStats.todayCompleted}
             />
           </div>
+        )}
 
-          <button className="btn btn-outline btn-sm" onClick={() => fetchAdminStats()} title="Refresh Live Data">
-            <RefreshCw size={15} /> Refresh
-          </button>
-        </div>
-      </div>
-
-      {/* Navigation Sub-Tabs */}
-      <div style={{
-        display: 'flex',
-        gap: '0.5rem',
-        marginBottom: '1.5rem',
-        borderBottom: '1px solid #E5E7EB',
-        paddingBottom: '0.75rem',
-        flexWrap: 'wrap'
-      }}>
-        <button
-          className={`btn ${activeTab === 'dashboard' ? 'btn-primary' : 'btn-outline'} btn-sm`}
-          onClick={() => setActiveTab('dashboard')}
-        >
-          <Shield size={16} /> Executive Dashboard
-        </button>
-
-        <button
-          className={`btn ${activeTab === 'mandi' ? 'btn-primary' : 'btn-outline'} btn-sm`}
-          onClick={() => setActiveTab('mandi')}
-        >
-          <Building2 size={16} /> Mandi Analysis
-        </button>
-
-        <button
-          className={`btn ${activeTab === 'farmer' ? 'btn-primary' : 'btn-outline'} btn-sm`}
-          onClick={() => setActiveTab('farmer')}
-        >
-          <Users size={16} /> Farmer Analysis
-        </button>
-
-        <button
-          className={`btn ${activeTab === 'reports' ? 'btn-primary' : 'btn-outline'} btn-sm`}
-          onClick={() => setActiveTab('reports')}
-        >
-          <Calendar size={16} /> Daily Mandi Reports ({stats?.dailyReports?.length || 0})
-        </button>
-      </div>
-
-      {/* TAB 1: EXECUTIVE DASHBOARD */}
-      {activeTab === 'dashboard' && stats && (
-        <div>
-          {/* Executive Overview Cards Grid */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '1rem',
-            marginBottom: '1.5rem'
-          }}>
-            {/* Card 1: Total Mandis */}
-            <div className="card">
-              <div style={{ fontSize: '0.8rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: 700 }}>Total Mandis</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#111827', margin: '0.25rem 0' }}>{stats.totalMandis}</div>
-              <div style={{ fontSize: '0.78rem', color: '#6B7280' }}>Connected procurement mandis</div>
-            </div>
-
-            {/* Card 2: Total Farmers */}
-            <div className="card">
-              <div style={{ fontSize: '0.8rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: 700 }}>Total Farmers</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#111827', margin: '0.25rem 0' }}>{stats.totalFarmers}</div>
-              <div style={{ fontSize: '0.78rem', color: '#6B7280' }}>Registered 8-digit farmer accounts</div>
-            </div>
-
-            {/* Card 3: Today's Bookings */}
-            <div className="card" style={{ borderLeft: '4px solid #F59E0B' }}>
-              <div style={{ fontSize: '0.8rem', color: '#92400E', textTransform: 'uppercase', fontWeight: 700 }}>Today's Total Bookings</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#D97706', margin: '0.25rem 0' }}>{stats.todayBooked}</div>
-              <div style={{ fontSize: '0.78rem', color: '#B45309' }}>Slot reservations for {stats.date}</div>
-            </div>
-
-            {/* Card 4: Today's Verified Arrivals */}
-            <div className="card" style={{ borderLeft: '4px solid #10B981' }}>
-              <div style={{ fontSize: '0.8rem', color: '#065F46', textTransform: 'uppercase', fontWeight: 700 }}>Verified Arrivals</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#065F46', margin: '0.25rem 0' }}>{stats.todayVerified}</div>
-              <div style={{ fontSize: '0.78rem', color: '#059669' }}>Gate verified via QR / Token</div>
-            </div>
-
-            {/* Card 5: Today's Pending */}
-            <div className="card" style={{ borderLeft: '4px solid #FBBF24' }}>
-              <div style={{ fontSize: '0.8rem', color: '#92400E', textTransform: 'uppercase', fontWeight: 700 }}>Pending / Not Arrived</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#92400E', margin: '0.25rem 0' }}>{stats.todayPending}</div>
-              <div style={{ fontSize: '0.78rem', color: '#B45309' }}>Booked farmers yet to arrive</div>
-            </div>
-
-            {/* Card 6: Completed Procurements */}
-            <div className="card" style={{ borderLeft: '4px solid #3B82F6' }}>
-              <div style={{ fontSize: '0.8rem', color: '#1E40AF', textTransform: 'uppercase', fontWeight: 700 }}>Completed Procurements</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#1D4ED8', margin: '0.25rem 0' }}>{stats.todayCompleted}</div>
-              <div style={{ fontSize: '0.78rem', color: '#2563EB' }}>Weighed & billed procurements</div>
-            </div>
-
-            {/* Card 7: Total Qty Procured */}
-            <div className="card" style={{ backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }}>
-              <div style={{ fontSize: '0.8rem', color: '#065F46', textTransform: 'uppercase', fontWeight: 700 }}>Total Qty Procured Today</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#065F46', margin: '0.25rem 0' }}>{stats.totalQtyProcuredToday} Qtl</div>
-              <div style={{ fontSize: '0.78rem', color: '#059669' }}>Actual weighed quintals</div>
-            </div>
-
-            {/* Card 8: Total Payment Amount */}
-            <div className="card" style={{ backgroundColor: '#FFFBEB', borderColor: '#FCD34D' }}>
-              <div style={{ fontSize: '0.8rem', color: '#92400E', textTransform: 'uppercase', fontWeight: 700 }}>Total Payment Processed</div>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#D97706', margin: '0.25rem 0' }}>₹{stats.totalPaymentAmountToday.toLocaleString()}</div>
-              <div style={{ fontSize: '0.78rem', color: '#B45309' }}>Confirmed prototype transactions</div>
-            </div>
+        {/* TAB: DAILY REPORTS */}
+        {activeTab === 'reports' && (
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <DailyReports
+              selectedDate={selectedDate}
+              onDateChange={(d) => setSelectedDate(d)}
+            />
           </div>
+        )}
 
-          {/* Quick Mandi Performance Summary Table */}
-          <MandiAnalysis mandiStats={stats.mandiStats} />
-        </div>
-      )}
-
-      {/* TAB 2: MANDI ANALYSIS */}
-      {activeTab === 'mandi' && stats && (
-        <MandiAnalysis mandiStats={stats.mandiStats} />
-      )}
-
-      {/* TAB 3: FARMER ANALYSIS */}
-      {activeTab === 'farmer' && stats && (
-        <FarmerAnalysis
-          cropStats={stats.cropStats}
-          totalFarmers={stats.totalFarmers}
-          todayBooked={stats.todayBooked}
-          todayVerified={stats.todayVerified}
-          todayCompleted={stats.todayCompleted}
-        />
-      )}
-
-      {/* TAB 4: DAILY MANDI REPORTS */}
-      {activeTab === 'reports' && stats && (
-        <DailyReports
-          selectedDate={selectedDate}
-          onDateChange={(d) => setSelectedDate(d)}
-        />
-      )}
+        {/* TAB: COMPLAINTS */}
+        {activeTab === 'complaints' && (
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <AdminComplaints />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
+
+

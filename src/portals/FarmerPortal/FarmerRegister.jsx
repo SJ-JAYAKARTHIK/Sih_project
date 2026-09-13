@@ -32,7 +32,7 @@ export const FarmerRegister = ({ onSwitchToLogin }) => {
         throw new Error(data.error || 'Registration failed');
       }
 
-      setSuccess(`Registration successful! Generated Farmer ID: ${data.farmer.id}`);
+      setSuccess(`Registration successful! Your Farmer ID: ${data.farmer.id}`);
       setTimeout(() => {
         loginFarmer(data.farmer);
       }, 1500);
@@ -44,119 +44,138 @@ export const FarmerRegister = ({ onSwitchToLogin }) => {
   };
 
   return (
-    <div style={{ maxWidth: '500px', margin: '2rem auto' }} className="card">
-      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+    <div style={{ maxWidth: '480px', margin: '2rem auto' }}>
+      <div className="card card-lg">
+        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+          <div style={{
+            width: '52px',
+            height: '52px',
+            borderRadius: 'var(--radius-lg)',
+            backgroundColor: 'var(--light-green)',
+            border: '1px solid var(--green-border)',
+            color: 'var(--primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 1rem'
+          }}>
+            <UserPlus size={26} />
+          </div>
+          <h2 style={{ fontSize: '1.4rem', marginBottom: '0.3rem' }}>
+            {t('farmerRegisterTitle')}
+          </h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+            Create your 8-digit Farmer ID for slot bookings
+          </p>
+        </div>
+
+        {error && (
+          <div className="alert alert-danger" style={{ marginBottom: '1.25rem' }}>
+            <AlertCircle size={16} style={{ flexShrink: 0 }} />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {success && (
+          <div className="alert alert-success" style={{ marginBottom: '1.25rem' }}>
+            <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
+            <span>{success}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">{t('farmerNameLabel')}</label>
+            <input
+              type="text"
+              className="form-input"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="e.g. Ramesh Kumar"
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">{t('mobileLabel')}</label>
+            <input
+              type="tel"
+              className="form-input"
+              value={formData.mobile}
+              onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
+              placeholder="10-digit Mobile Number"
+              maxLength={10}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">{t('locationLabel')}</label>
+            <input
+              type="text"
+              className="form-input"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              placeholder="Village / District / Location"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">{t('bankDetailsLabel')}</label>
+            <input
+              type="text"
+              className="form-input"
+              value={formData.bankDetails}
+              onChange={(e) => setFormData({ ...formData, bankDetails: e.target.value })}
+              placeholder="Bank Name — Account No / IFSC"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">{t('passwordLabel')}</label>
+            <input
+              type="password"
+              className="form-input"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              placeholder="Create a password"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="btn btn-primary"
+            style={{ width: '100%', marginTop: '0.5rem' }}
+            disabled={loading}
+          >
+            {loading ? 'Creating Account...' : t('registerBtn')}
+          </button>
+        </form>
+
         <div style={{
-          width: '56px',
-          height: '56px',
-          borderRadius: '50%',
-          backgroundColor: '#FEF3C7',
-          color: '#D97706',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          margin: '0 auto 1rem'
+          marginTop: '1.25rem',
+          paddingTop: '1rem',
+          borderTop: '1px solid var(--border)',
+          textAlign: 'center',
+          fontSize: '0.875rem'
         }}>
-          <UserPlus size={28} />
+          <span style={{ color: 'var(--text-muted)' }}>{t('hasAccount')}{' '}</span>
+          <button
+            type="button"
+            onClick={onSwitchToLogin}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--primary)',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontSize: '0.875rem'
+            }}
+          >
+            {t('farmerLoginTitle')}
+          </button>
         </div>
-        <h2 style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{t('farmerRegisterTitle')}</h2>
-        <p style={{ color: '#6B7280', fontSize: '0.9rem' }}>Create your 8-digit Farmer ID account for slot bookings</p>
-      </div>
-
-      {error && (
-        <div className="alert alert-danger">
-          <AlertCircle size={18} />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {success && (
-        <div className="alert alert-success">
-          <CheckCircle2 size={18} />
-          <span>{success}</span>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label className="form-label">{t('farmerNameLabel')}</label>
-          <input
-            type="text"
-            className="form-input"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="e.g. Ramesh Verma"
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">{t('mobileLabel')}</label>
-          <input
-            type="tel"
-            className="form-input"
-            value={formData.mobile}
-            onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-            placeholder="10-digit Mobile Number"
-            maxLength={10}
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">{t('locationLabel')}</label>
-          <input
-            type="text"
-            className="form-input"
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            placeholder="Village / District / Location"
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">{t('bankDetailsLabel')}</label>
-          <input
-            type="text"
-            className="form-input"
-            value={formData.bankDetails}
-            onChange={(e) => setFormData({ ...formData, bankDetails: e.target.value })}
-            placeholder="Bank Name — Account No / IFSC (Prototype representation)"
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">{t('passwordLabel')}</label>
-          <input
-            type="password"
-            className="form-input"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            placeholder="Create password"
-            required
-          />
-        </div>
-
-        <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} disabled={loading}>
-          {loading ? 'Creating Account...' : t('registerBtn')}
-        </button>
-      </form>
-
-      <div style={{
-        marginTop: '1.5rem',
-        paddingTop: '1rem',
-        borderTop: '1px solid #E5E7EB',
-        textAlign: 'center',
-        fontSize: '0.9rem'
-      }}>
-        <span style={{ color: '#6B7280' }}>{t('hasAccount')}{' '}</span>
-        <button
-          type="button"
-          onClick={onSwitchToLogin}
-          style={{ background: 'none', border: 'none', color: '#D97706', fontWeight: 600, cursor: 'pointer' }}
-        >
-          {t('farmerLoginTitle')}
-        </button>
       </div>
     </div>
   );

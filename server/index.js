@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import http from 'http';
 import twilio from 'twilio';
 import { db } from './db.js';
+import { handleExotelPassthru } from './voiceHandler.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -228,6 +229,173 @@ app.post('/api/procurement/complete', (req, res) => {
   }
 });
 
+// --- LIVE QUEUE & ESTIMATED WAITING TIME ROUTES ---
+
+// Get Mandi Operational Queue (Source of Truth)
+app.get('/api/queue/mandi/:mandiId', (req, res) => {
+  const mandi = db.getMandiById(req.params.mandiId);
+  if (!mandi) {
+    return res.status(404).json({ error: `Mandi with ID ${req.params.mandiId} not found.` });
+  }
+  const { date } = req.query;
+  const queueData = db.getMandiActiveQueue(req.params.mandiId, date);
+  res.json(queueData);
+});
+
+// Get Farmer Live Queue Status (Source of Truth with Farmer Ownership Validation)
+app.get('/api/queue/farmer/:farmerId', (req, res) => {
+  const farmer = db.getFarmerById(req.params.farmerId);
+  if (!farmer) {
+    return res.status(404).json({ error: `Farmer with ID ${req.params.farmerId} not found.` });
+  }
+  const status = db.getFarmerQueueStatus(req.params.farmerId);
+  res.json(status);
+});
+
+// Start Procurement (Mandi Officer starts serving a farmer)
+app.post('/api/queue/start-procurement', (req, res) => {
+  try {
+    const { mandiId, bookingId } = req.body;
+    if (!mandiId || !bookingId) {
+      return res.status(400).json({ error: "Mandi ID and Booking ID are required." });
+    }
+    const mandi = db.getMandiById(mandiId);
+    if (!mandi) {
+      return res.status(404).json({ error: `Mandi with ID ${mandiId} not found.` });
+    }
+
+    const booking = db.startProcurement(mandiId, bookingId);
+    broadcast('PROCUREMENT_STARTED', booking);
+    res.json({ success: true, booking });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Update Booking Queue Status (Cancel, No-Show, Reschedule)
+app.post('/api/queue/update-status', (req, res) => {
+  try {
+    const { mandiId, bookingId, action, date, timeSlot } = req.body;
+    if (!mandiId || !bookingId || !action) {
+      return res.status(400).json({ error: "Mandi ID, Booking ID, and Action are required." });
+    }
+    const mandi = db.getMandiById(mandiId);
+    if (!mandi) {
+      return res.status(404).json({ error: `Mandi with ID ${mandiId} not found.` });
+    }
+
+    const booking = db.updateBookingStatus(mandiId, bookingId, { action, date, timeSlot });
+    const eventName = action === 'CANCEL' ? 'BOOKING_CANCELLED' : action === 'NOSHOW' ? 'BOOKING_NOSHOW' : 'BOOKING_RESCHEDULED';
+    broadcast(eventName, booking);
+    res.json({ success: true, booking });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Farmer Cancel Booking Endpoint (Farmer Authorization Enforced)
+app.post('/api/bookings/cancel', (req, res) => {
+  try {
+    const { farmerId, bookingId } = req.body;
+    if (!farmerId || !bookingId) {
+      return res.status(400).json({ error: "Farmer ID and Booking ID are required." });
+    }
+    const farmer = db.getFarmerById(farmerId);
+    if (!farmer) {
+      return res.status(404).json({ error: `Farmer with ID ${farmerId} not found.` });
+    }
+
+    const booking = db.cancelBooking(farmerId, bookingId);
+    broadcast('BOOKING_CANCELLED', booking);
+    res.json({ success: true, booking });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Farmer Reschedule Booking Endpoint (Farmer Authorization & Backend Capacity Enforced)
+app.post('/api/bookings/reschedule', (req, res) => {
+  try {
+    const { farmerId, bookingId, newDate, newTimeSlot } = req.body;
+    if (!farmerId || !bookingId || !newDate || !newTimeSlot) {
+      return res.status(400).json({ error: "Farmer ID, Booking ID, New Date, and New Time Slot are required." });
+    }
+    const farmer = db.getFarmerById(farmerId);
+    if (!farmer) {
+      return res.status(404).json({ error: `Farmer with ID ${farmerId} not found.` });
+    }
+
+    const booking = db.rescheduleBooking(farmerId, bookingId, { newDate, newTimeSlot });
+    broadcast('BOOKING_RESCHEDULED', booking);
+    res.json({ success: true, booking });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Evaluate No-Shows Endpoint
+app.post('/api/queue/evaluate-noshows', (req, res) => {
+  try {
+    const { mandiId } = req.body || {};
+    const evaluated = db.evaluateNoShows(mandiId);
+    if (evaluated.length > 0) {
+      broadcast('BOOKING_NOSHOW', { count: evaluated.length, evaluated });
+    }
+    res.json({ success: true, count: evaluated.length, evaluated });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// --- FARMER NOTIFICATION SYSTEM ROUTES ---
+
+// Get Farmer Notifications & Unread Count (Farmer Authorization Enforced)
+app.get('/api/notifications/farmer/:farmerId', (req, res) => {
+  const farmer = db.getFarmerById(req.params.farmerId);
+  if (!farmer) {
+    return res.status(404).json({ error: `Farmer with ID ${req.params.farmerId} not found.` });
+  }
+  const notifications = db.getFarmerNotifications(req.params.farmerId);
+  const unreadCount = db.getFarmerUnreadCount(req.params.farmerId);
+  res.json({ notifications, unreadCount });
+});
+
+// Mark Single Notification as Read
+app.post('/api/notifications/read', (req, res) => {
+  try {
+    const { farmerId, notificationId } = req.body;
+    if (!farmerId || !notificationId) {
+      return res.status(400).json({ error: "Farmer ID and Notification ID are required." });
+    }
+    const farmer = db.getFarmerById(farmerId);
+    if (!farmer) {
+      return res.status(404).json({ error: `Farmer with ID ${farmerId} not found.` });
+    }
+    const updated = db.markNotificationAsRead(farmerId, notificationId);
+    res.json({ success: true, notification: updated });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Mark All Notifications as Read for a Farmer
+app.post('/api/notifications/read-all', (req, res) => {
+  try {
+    const { farmerId } = req.body;
+    if (!farmerId) {
+      return res.status(400).json({ error: "Farmer ID is required." });
+    }
+    const farmer = db.getFarmerById(farmerId);
+    if (!farmer) {
+      return res.status(404).json({ error: `Farmer with ID ${farmerId} not found.` });
+    }
+    const result = db.markAllNotificationsAsRead(farmerId);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // Get Procurement & Bill by Booking ID
 app.get('/api/procurement/booking/:bookingId', (req, res) => {
   const bill = db.getProcurementByBookingId(req.params.bookingId);
@@ -307,6 +475,63 @@ app.get('/api/history/mandi/:mandiId', (req, res) => {
   res.json(history);
 });
 
+// --- COMPLAINTS & DISPUTE MANAGEMENT ROUTES ---
+
+// Create Complaint (Farmer Authorization Enforced)
+app.post('/api/complaints/create', (req, res) => {
+  try {
+    const { farmerId, bookingId, category, description } = req.body;
+    const complaint = db.createComplaint({ farmerId, bookingId, category, description });
+    broadcast('COMPLAINT_CREATED', complaint);
+    res.json({ success: true, complaint });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Get Farmer Complaints
+app.get('/api/complaints/farmer/:farmerId', (req, res) => {
+  const farmer = db.getFarmerById(req.params.farmerId);
+  if (!farmer) {
+    return res.status(404).json({ error: `Farmer with ID ${req.params.farmerId} not found.` });
+  }
+  const complaints = db.getFarmerComplaints(req.params.farmerId);
+  res.json(complaints);
+});
+
+// Get Mandi Complaints (Mandi Isolation Enforced)
+app.get('/api/complaints/mandi/:mandiId', (req, res) => {
+  const mandi = db.getMandiById(req.params.mandiId);
+  if (!mandi) {
+    return res.status(404).json({ error: `Mandi with ID ${req.params.mandiId} not found.` });
+  }
+  const { status, category } = req.query;
+  const complaints = db.getMandiComplaints(req.params.mandiId, { status, category });
+  res.json(complaints);
+});
+
+// Get Admin All Complaints (Multi-Filter)
+app.get('/api/complaints/admin', (req, res) => {
+  const { mandiId, status, category, date } = req.query;
+  const complaints = db.getAllComplaints({ mandiId, status, category, date });
+  res.json(complaints);
+});
+
+// Update Complaint Status (Authorization & Mandi Isolation Enforced)
+app.post('/api/complaints/update-status', (req, res) => {
+  try {
+    const { complaintId, updatedBy, role, mandiId, newStatus, responseComment } = req.body;
+    if (!complaintId || !newStatus) {
+      return res.status(400).json({ error: "Complaint ID and New Status are required." });
+    }
+    const updated = db.updateComplaintStatus({ complaintId, updatedBy, role, mandiId, newStatus, responseComment });
+    broadcast('COMPLAINT_UPDATED', updated);
+    res.json({ success: true, complaint: updated });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // --- TWILIO VOICE IVR ROUTES ---
 
 // 1. Initial Call Entrypoint: Welcome & Gather 8-digit Farmer ID
@@ -374,90 +599,13 @@ app.post('/api/voice/farmer-id', (req, res) => {
   res.send(twiml.toString());
 });
 
-// --- EXOTEL PASSTHRU VOICE ROUTE ---
-// In-memory session store for tracking active Exotel IVR calls by CallSid / CallFrom
-const exotelSessions = new Map();
+// --- EXOTEL PASSTHRU VOICE ROUTES ---
+// Primary webhook endpoint for real Exotel IVR passthru (supports GET and POST)
+app.get('/api/voice/exotel', (req, res) => handleExotelPassthru(req, res, broadcast));
+app.post('/api/voice/exotel', (req, res) => handleExotelPassthru(req, res, broadcast));
 
-// Crop Mapping (1-6 as configured in Exotel IVR)
-const CROP_MAP = {
-  '1': { id: 'crop-1', name: 'Paddy' },
-  '2': { id: 'crop-2', name: 'Wheat' },
-  '3': { id: 'crop-3', name: 'Cotton' },
-  '4': { id: 'crop-4', name: 'Maize' },
-  '5': { id: 'crop-5', name: 'Pulses' },
-  '6': { id: 'crop-6', name: 'Gram' }
-};
-
-// Webhook endpoint for Exotel Passthru integration testing (supports both GET and POST)
-const handleExotelRequest = (req, res) => {
-  const rawDigits = req.query ? req.query.digits : undefined;
-  const callSid = req.query.CallSid || req.body?.CallSid || req.query.CallFrom || req.body?.CallFrom || 'DEFAULT_SESSION';
-  const sessionKey = callSid.trim();
-
-  // Exotel sends digits as a quoted string (e.g. '"10029384"' or '"3"'). Normalize to unquoted string.
-  const extractedDigits = typeof rawDigits === 'string'
-    ? rawDigits.replace(/["']/g, '').trim()
-    : (rawDigits !== undefined && rawDigits !== null ? String(rawDigits).replace(/["']/g, '').trim() : '');
-
-  console.log('====================================================');
-  console.log('📞 [EXOTEL PASSTHRU] Incoming Request Received');
-  console.log('Session Key (CallSid/From):', sessionKey);
-  console.log('Raw Exotel digits:', rawDigits);
-  console.log('Extracted Digits:', extractedDigits);
-
-  let session = exotelSessions.get(sessionKey) || { farmerId: null, farmerName: null, selectedCrop: null, stage: 'INIT' };
-
-  // Distinguish input type by pattern & session state
-  if (/^\d{8}$/.test(extractedDigits)) {
-    // 1. Farmer ID Entry Stage (8 digits)
-    const farmer = db.getFarmerById(extractedDigits);
-    const isValidFarmerId = Boolean(farmer);
-
-    if (isValidFarmerId) {
-      session = {
-        farmerId: farmer.id,
-        farmerName: farmer.name,
-        selectedCrop: null,
-        stage: 'AWAITING_CROP'
-      };
-      exotelSessions.set(sessionKey, session);
-      console.log('✅ Farmer ID Verified:', farmer.id);
-      console.log('Farmer Name:', farmer.name);
-      console.log('Session Stage Updated -> AWAITING_CROP');
-    } else {
-      console.log('❌ Farmer ID Not Found in Database:', extractedDigits);
-    }
-  } else if (/^[1-6]$/.test(extractedDigits)) {
-    // 2. Crop Selection Stage (Digits 1 to 6)
-    if (session.farmerId) {
-      const cropInfo = CROP_MAP[extractedDigits];
-      session.selectedCrop = cropInfo;
-      session.stage = 'CROP_SELECTED';
-      exotelSessions.set(sessionKey, session);
-
-      console.log('🌽 Crop Selection Received:', extractedDigits, `(${cropInfo.name})`);
-      console.log('✅ Active IVR Session State:', {
-        farmerId: session.farmerId,
-        farmerName: session.farmerName,
-        selectedCrop: session.selectedCrop
-      });
-    } else {
-      console.log('⚠️ Crop selection received (' + extractedDigits + '), but no verified Farmer ID session exists for this call.');
-    }
-  } else {
-    console.log('ℹ️ Received input outside expected formats (neither 8-digit Farmer ID nor 1-6 crop choice):', extractedDigits);
-  }
-
-  console.log('====================================================');
-
-  res.status(200).json({
-    success: true,
-    message: 'Exotel Passthru request received successfully'
-  });
-};
-
-app.get('/api/voice/exotel', handleExotelRequest);
-app.post('/api/voice/exotel', handleExotelRequest);
+// Development and testing endpoint (simulates full voice state-machine without phone calls)
+app.post('/api/voice/exotel/test', (req, res) => handleExotelPassthru(req, res, broadcast));
 
 // Start Server
 server.listen(PORT, () => {

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { X, QrCode, KeyRound, CheckCircle2, AlertCircle, Search } from 'lucide-react';
 
-export const VerifyFarmerModal = ({ isOpen, onClose, mandiId, onVerificationSuccess }) => {
-  const [method, setMethod] = useState('token'); // 'token' | 'qr'
+export const VerifyFarmerModal = ({ isOpen, onClose, mandiId, onVerificationSuccess, initialMethod = 'token' }) => {
+  const [method, setMethod] = useState(initialMethod); // 'token' | 'qr'
   const [tokenInput, setTokenInput] = useState('');
   const [qrInput, setQrInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -12,10 +12,12 @@ export const VerifyFarmerModal = ({ isOpen, onClose, mandiId, onVerificationSucc
   const [verifiedFarmer, setVerifiedFarmer] = useState(null);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      setMethod(initialMethod || 'token');
+    } else {
       resetForm();
     }
-  }, [isOpen]);
+  }, [isOpen, initialMethod]);
 
   const resetForm = () => {
     setTokenInput('');

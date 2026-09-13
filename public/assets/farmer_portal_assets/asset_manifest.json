@@ -1,0 +1,370 @@
+{
+  "source": "ChatGPT Image Sep 10, 2026, 01_40_16 PM.png",
+  "source_size_px": [
+    1672,
+    941
+  ],
+  "note": "Crops are extracted directly from the supplied flattened screenshot. They are screenshot assets, not the original source SVG/icon files.",
+  "assets": {
+    "01_header_logo_and_tagline.png": {
+      "crop_box_xyxy": [
+        35,
+        10,
+        360,
+        75
+      ],
+      "native_size_px": [
+        325,
+        65
+      ]
+    },
+    "02_farmer_portal_icon_button.png": {
+      "crop_box_xyxy": [
+        475,
+        15,
+        650,
+        70
+      ],
+      "native_size_px": [
+        175,
+        55
+      ]
+    },
+    "03_mandi_officer_portal_nav.png": {
+      "crop_box_xyxy": [
+        680,
+        15,
+        900,
+        72
+      ],
+      "native_size_px": [
+        220,
+        57
+      ]
+    },
+    "04_admin_portal_nav.png": {
+      "crop_box_xyxy": [
+        900,
+        15,
+        1080,
+        72
+      ],
+      "native_size_px": [
+        180,
+        57
+      ]
+    },
+    "05_language_selector.png": {
+      "crop_box_xyxy": [
+        1270,
+        10,
+        1420,
+        75
+      ],
+      "native_size_px": [
+        150,
+        65
+      ]
+    },
+    "06_user_profile_menu.png": {
+      "crop_box_xyxy": [
+        1430,
+        10,
+        1650,
+        75
+      ],
+      "native_size_px": [
+        220,
+        65
+      ]
+    },
+    "07_home_dashboard_nav.png": {
+      "crop_box_xyxy": [
+        35,
+        92,
+        210,
+        145
+      ],
+      "native_size_px": [
+        175,
+        53
+      ]
+    },
+    "08_bills_transactions_nav.png": {
+      "crop_box_xyxy": [
+        245,
+        92,
+        420,
+        145
+      ],
+      "native_size_px": [
+        175,
+        53
+      ]
+    },
+    "09_my_profile_nav.png": {
+      "crop_box_xyxy": [
+        450,
+        92,
+        575,
+        145
+      ],
+      "native_size_px": [
+        125,
+        53
+      ]
+    },
+    "10_notifications_nav.png": {
+      "crop_box_xyxy": [
+        1235,
+        92,
+        1345,
+        145
+      ],
+      "native_size_px": [
+        110,
+        53
+      ]
+    },
+    "11_book_procurement_slot_button.png": {
+      "crop_box_xyxy": [
+        1385,
+        92,
+        1620,
+        145
+      ],
+      "native_size_px": [
+        235,
+        53
+      ]
+    },
+    "12_welcome_leaf_icon.png": {
+      "crop_box_xyxy": [
+        60,
+        190,
+        145,
+        275
+      ],
+      "native_size_px": [
+        85,
+        85
+      ]
+    },
+    "13_welcome_banner_full.png": {
+      "crop_box_xyxy": [
+        38,
+        173,
+        1612,
+        296
+      ],
+      "native_size_px": [
+        1574,
+        123
+      ]
+    },
+    "14_welcome_right_illustration.png": {
+      "crop_box_xyxy": [
+        1260,
+        174,
+        1610,
+        296
+      ],
+      "native_size_px": [
+        350,
+        122
+      ]
+    },
+    "15_live_queue_lightning_icon.png": {
+      "crop_box_xyxy": [
+        40,
+        332,
+        75,
+        375
+      ],
+      "native_size_px": [
+        35,
+        43
+      ]
+    },
+    "16_realtime_badge.png": {
+      "crop_box_xyxy": [
+        310,
+        335,
+        410,
+        370
+      ],
+      "native_size_px": [
+        100,
+        35
+      ]
+    },
+    "17_waiting_stage_badge.png": {
+      "crop_box_xyxy": [
+        1430,
+        330,
+        1590,
+        370
+      ],
+      "native_size_px": [
+        160,
+        40
+      ]
+    },
+    "18_token_card.png": {
+      "crop_box_xyxy": [
+        65,
+        388,
+        355,
+        510
+      ],
+      "native_size_px": [
+        290,
+        122
+      ]
+    },
+    "19_queue_position_card.png": {
+      "crop_box_xyxy": [
+        375,
+        388,
+        675,
+        510
+      ],
+      "native_size_px": [
+        300,
+        122
+      ]
+    },
+    "20_farmers_ahead_card.png": {
+      "crop_box_xyxy": [
+        690,
+        388,
+        985,
+        510
+      ],
+      "native_size_px": [
+        295,
+        122
+      ]
+    },
+    "21_serving_now_card.png": {
+      "crop_box_xyxy": [
+        1000,
+        388,
+        1295,
+        510
+      ],
+      "native_size_px": [
+        295,
+        122
+      ]
+    },
+    "22_est_wait_card.png": {
+      "crop_box_xyxy": [
+        1310,
+        388,
+        1590,
+        510
+      ],
+      "native_size_px": [
+        280,
+        122
+      ]
+    },
+    "23_queue_footer_strip.png": {
+      "crop_box_xyxy": [
+        65,
+        523,
+        1585,
+        568
+      ],
+      "native_size_px": [
+        1520,
+        45
+      ]
+    },
+    "24_recent_bookings_heading.png": {
+      "crop_box_xyxy": [
+        38,
+        610,
+        350,
+        660
+      ],
+      "native_size_px": [
+        312,
+        50
+      ]
+    },
+    "25_booking_status_badges.png": {
+      "crop_box_xyxy": [
+        65,
+        682,
+        330,
+        715
+      ],
+      "native_size_px": [
+        265,
+        33
+      ]
+    },
+    "26_paddy_crop_icon.png": {
+      "crop_box_xyxy": [
+        68,
+        725,
+        130,
+        790
+      ],
+      "native_size_px": [
+        62,
+        65
+      ]
+    },
+    "27_booking_details_panel.png": {
+      "crop_box_xyxy": [
+        130,
+        720,
+        460,
+        850
+      ],
+      "native_size_px": [
+        330,
+        130
+      ]
+    },
+    "28_booking_progress_timeline.png": {
+      "crop_box_xyxy": [
+        485,
+        735,
+        1290,
+        810
+      ],
+      "native_size_px": [
+        805,
+        75
+      ]
+    },
+    "29_gate_pass_qr_card.png": {
+      "crop_box_xyxy": [
+        1320,
+        675,
+        1575,
+        885
+      ],
+      "native_size_px": [
+        255,
+        210
+      ]
+    },
+    "30_gate_pass_qr_only.png": {
+      "crop_box_xyxy": [
+        1350,
+        720,
+        1545,
+        825
+      ],
+      "native_size_px": [
+        195,
+        105
+      ]
+    }
+  }
+}

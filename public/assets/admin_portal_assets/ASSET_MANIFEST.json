@@ -1,0 +1,422 @@
+[
+  {
+    "asset": "00_reference_full.png",
+    "crop": {
+      "left": 0,
+      "top": 0,
+      "right": 1671,
+      "bottom": 941
+    },
+    "size_px": [
+      1671,
+      941
+    ],
+    "purpose": "Original reference"
+  },
+  {
+    "asset": "01_top_header.png",
+    "crop": {
+      "left": 0,
+      "top": 0,
+      "right": 1671,
+      "bottom": 73
+    },
+    "size_px": [
+      1671,
+      73
+    ],
+    "purpose": "Full dark-green top navigation bar"
+  },
+  {
+    "asset": "02_krishidwaar_logo.png",
+    "crop": {
+      "left": 28,
+      "top": 7,
+      "right": 322,
+      "bottom": 62
+    },
+    "size_px": [
+      294,
+      55
+    ],
+    "purpose": "KrishiDwaar logo and tagline"
+  },
+  {
+    "asset": "03_header_navigation.png",
+    "crop": {
+      "left": 485,
+      "top": 7,
+      "right": 1060,
+      "bottom": 65
+    },
+    "size_px": [
+      575,
+      58
+    ],
+    "purpose": "Farmer Portal, Mandi Officer Portal and Admin Portal navigation"
+  },
+  {
+    "asset": "04_language_control.png",
+    "crop": {
+      "left": 1267,
+      "top": 10,
+      "right": 1423,
+      "bottom": 61
+    },
+    "size_px": [
+      156,
+      51
+    ],
+    "purpose": "English language selector"
+  },
+  {
+    "asset": "05_admin_profile_control.png",
+    "crop": {
+      "left": 1440,
+      "top": 8,
+      "right": 1640,
+      "bottom": 64
+    },
+    "size_px": [
+      200,
+      56
+    ],
+    "purpose": "Admin avatar, name, ID and dropdown"
+  },
+  {
+    "asset": "06_overview_banner.png",
+    "crop": {
+      "left": 27,
+      "top": 84,
+      "right": 1629,
+      "bottom": 177
+    },
+    "size_px": [
+      1602,
+      93
+    ],
+    "purpose": "Admin State Overview banner"
+  },
+  {
+    "asset": "07_overview_banner_icon.png",
+    "crop": {
+      "left": 39,
+      "top": 96,
+      "right": 94,
+      "bottom": 149
+    },
+    "size_px": [
+      55,
+      53
+    ],
+    "purpose": "Shield icon for overview banner"
+  },
+  {
+    "asset": "08_overview_landscape.png",
+    "crop": {
+      "left": 815,
+      "top": 88,
+      "right": 1618,
+      "bottom": 174
+    },
+    "size_px": [
+      803,
+      86
+    ],
+    "purpose": "Agricultural landscape illustration"
+  },
+  {
+    "asset": "09_tab_navigation.png",
+    "crop": {
+      "left": 15,
+      "top": 180,
+      "right": 1624,
+      "bottom": 221
+    },
+    "size_px": [
+      1609,
+      41
+    ],
+    "purpose": "Dashboard tab strip"
+  },
+  {
+    "asset": "10_metric_cards_row1.png",
+    "crop": {
+      "left": 28,
+      "top": 238,
+      "right": 1624,
+      "bottom": 350
+    },
+    "size_px": [
+      1596,
+      112
+    ],
+    "purpose": "First row of KPI cards"
+  },
+  {
+    "asset": "11_metric_cards_row2.png",
+    "crop": {
+      "left": 28,
+      "top": 368,
+      "right": 1624,
+      "bottom": 479
+    },
+    "size_px": [
+      1596,
+      111
+    ],
+    "purpose": "Second row of KPI cards"
+  },
+  {
+    "asset": "12_total_mandis_card.png",
+    "crop": {
+      "left": 28,
+      "top": 238,
+      "right": 415,
+      "bottom": 350
+    },
+    "size_px": [
+      387,
+      112
+    ],
+    "purpose": "UI component crop"
+  },
+  {
+    "asset": "13_total_farmers_card.png",
+    "crop": {
+      "left": 435,
+      "top": 238,
+      "right": 818,
+      "bottom": 350
+    },
+    "size_px": [
+      383,
+      112
+    ],
+    "purpose": "UI component crop"
+  },
+  {
+    "asset": "14_bookings_card.png",
+    "crop": {
+      "left": 834,
+      "top": 238,
+      "right": 1217,
+      "bottom": 350
+    },
+    "size_px": [
+      383,
+      112
+    ],
+    "purpose": "UI component crop"
+  },
+  {
+    "asset": "15_verified_arrivals_card.png",
+    "crop": {
+      "left": 1237,
+      "top": 238,
+      "right": 1624,
+      "bottom": 350
+    },
+    "size_px": [
+      387,
+      112
+    ],
+    "purpose": "UI component crop"
+  },
+  {
+    "asset": "16_pending_card.png",
+    "crop": {
+      "left": 28,
+      "top": 368,
+      "right": 415,
+      "bottom": 479
+    },
+    "size_px": [
+      387,
+      111
+    ],
+    "purpose": "UI component crop"
+  },
+  {
+    "asset": "17_completed_card.png",
+    "crop": {
+      "left": 435,
+      "top": 368,
+      "right": 818,
+      "bottom": 479
+    },
+    "size_px": [
+      383,
+      111
+    ],
+    "purpose": "UI component crop"
+  },
+  {
+    "asset": "18_qty_procured_card.png",
+    "crop": {
+      "left": 834,
+      "top": 368,
+      "right": 1217,
+      "bottom": 479
+    },
+    "size_px": [
+      383,
+      111
+    ],
+    "purpose": "UI component crop"
+  },
+  {
+    "asset": "19_payment_card.png",
+    "crop": {
+      "left": 1237,
+      "top": 368,
+      "right": 1624,
+      "bottom": 479
+    },
+    "size_px": [
+      387,
+      111
+    ],
+    "purpose": "UI component crop"
+  },
+  {
+    "asset": "20_performance_panel.png",
+    "crop": {
+      "left": 28,
+      "top": 498,
+      "right": 1624,
+      "bottom": 831
+    },
+    "size_px": [
+      1596,
+      333
+    ],
+    "purpose": "Mandi Activity & Performance panel"
+  },
+  {
+    "asset": "21_performance_header.png",
+    "crop": {
+      "left": 45,
+      "top": 510,
+      "right": 1605,
+      "bottom": 565
+    },
+    "size_px": [
+      1560,
+      55
+    ],
+    "purpose": "Performance title and subtitle"
+  },
+  {
+    "asset": "22_filter_control.png",
+    "crop": {
+      "left": 1392,
+      "top": 513,
+      "right": 1601,
+      "bottom": 551
+    },
+    "size_px": [
+      209,
+      38
+    ],
+    "purpose": "All Mandis filter dropdown"
+  },
+  {
+    "asset": "23_table_header.png",
+    "crop": {
+      "left": 51,
+      "top": 566,
+      "right": 1600,
+      "bottom": 601
+    },
+    "size_px": [
+      1549,
+      35
+    ],
+    "purpose": "Table header row"
+  },
+  {
+    "asset": "24_table_rows.png",
+    "crop": {
+      "left": 51,
+      "top": 601,
+      "right": 1600,
+      "bottom": 813
+    },
+    "size_px": [
+      1549,
+      212
+    ],
+    "purpose": "Table data rows"
+  },
+  {
+    "asset": "25_table_status_pills.png",
+    "crop": {
+      "left": 552,
+      "top": 614,
+      "right": 1517,
+      "bottom": 800
+    },
+    "size_px": [
+      965,
+      186
+    ],
+    "purpose": "Verified/Pending/Active status pill area"
+  },
+  {
+    "asset": "26_bottom_left_decoration.png",
+    "crop": {
+      "left": 0,
+      "top": 826,
+      "right": 280,
+      "bottom": 916
+    },
+    "size_px": [
+      280,
+      90
+    ],
+    "purpose": "Bottom-left agricultural decoration"
+  },
+  {
+    "asset": "27_bottom_right_decoration.png",
+    "crop": {
+      "left": 1390,
+      "top": 826,
+      "right": 1671,
+      "bottom": 916
+    },
+    "size_px": [
+      281,
+      90
+    ],
+    "purpose": "Bottom-right agricultural decoration"
+  },
+  {
+    "asset": "28_footer_content.png",
+    "crop": {
+      "left": 320,
+      "top": 870,
+      "right": 1400,
+      "bottom": 913
+    },
+    "size_px": [
+      1080,
+      43
+    ],
+    "purpose": "Footer text/content"
+  },
+  {
+    "asset": "29_page_background.png",
+    "crop": {
+      "left": 0,
+      "top": 73,
+      "right": 1671,
+      "bottom": 941
+    },
+    "size_px": [
+      1671,
+      868
+    ],
+    "purpose": "Main page background area"
+  }
+]
