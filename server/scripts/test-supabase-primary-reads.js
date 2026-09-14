@@ -127,7 +127,7 @@ async function runPhase1PrimaryReadTests() {
   // 9. Admin Daily Reports Test
   try {
     const reports = await db.getAllDailyReports();
-    if (Array.isArray(reports) && reports.length === 3) {
+    if (Array.isArray(reports) && reports.length >= 3) {
       console.log(`✅ 9. Admin Daily Reports Read: PASSED - Loaded ${reports.length} daily reports.`);
       passedCount++;
     } else {

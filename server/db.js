@@ -274,6 +274,7 @@ class Database {
     this.data = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
     if (!this.data.notifications) this.data.notifications = [];
     if (!this.data.complaints) this.data.complaints = [];
+    if (!this.data.dailyReports) this.data.dailyReports = [];
     this.ensureTodaySeedData();
   }
 
@@ -594,6 +595,124 @@ class Database {
     if (startDate) reports = reports.filter(r => r.date >= startDate);
     if (endDate) reports = reports.filter(r => r.date <= endDate);
     return reports.sort((a, b) => b.date.localeCompare(a.date));
+  }
+
+  async submitDailyReport(mandiId, date) {
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    const mandi = await this.getMandiById(mandiId);
+    if (!mandi) {
+      throw new Error(`Mandi with ID ${mandiId} not found.`);
+    }
+
+    let mBookings = [];
+    let mProcurements = [];
+
+    const activeSupabase = this.supabase;
+    if (activeSupabase) {
+      try {
+        const [bRes, pRes] = await Promise.all([
+          activeSupabase.from('bookings').select('*').eq('mandi_id', String(mandiId)).eq('date', targetDate),
+          activeSupabase.from('procurements').select('*').eq('mandi_id', String(mandiId)).eq('date', targetDate)
+        ]);
+        if (!bRes.error && Array.isArray(bRes.data)) {
+          mBookings = bRes.data.map(mapBooking);
+        }
+        if (!pRes.error && Array.isArray(pRes.data)) {
+          mProcurements = pRes.data.map(mapProcurement);
+        }
+      } catch (err) {
+        console.warn('⚠️ [SUPABASE READ EXCEPTION] submitDailyReport query fallback:', err.message);
+      }
+    }
+
+    if (mBookings.length === 0 && this.data.bookings) {
+      mBookings = this.data.bookings.filter(b => b.mandiId === String(mandiId) && b.date === targetDate);
+    }
+    if (mProcurements.length === 0 && this.data.procurements) {
+      mProcurements = this.data.procurements.filter(p => p.mandiId === String(mandiId) && p.date === targetDate);
+    }
+
+    const totalBooked = mBookings.length;
+    const totalVerified = mBookings.filter(b => b.arrivalStatus === 'Verified / Arrived').length;
+    const totalPending = mBookings.filter(b => b.arrivalStatus === 'Pending').length;
+    const totalCompleted = mBookings.filter(b => b.procurementStatus === 'Completed').length;
+
+    let totalQty = 0;
+    let totalPayment = 0;
+    mProcurements.forEach(p => {
+      totalQty += parseFloat(p.actualQty || 0);
+      totalPayment += parseFloat(p.totalAmount || 0);
+    });
+
+    const reportId = `REP-${mandiId}-${targetDate}`;
+    const submittedAt = new Date().toISOString();
+
+    const reportObj = {
+      id: reportId,
+      mandiId: String(mandiId),
+      mandiName: mandi.name,
+      date: targetDate,
+      totalBooked,
+      totalVerified,
+      totalPending,
+      totalCompleted,
+      totalQty,
+      totalPayment,
+      submittedAt
+    };
+
+    if (activeSupabase) {
+      try {
+        const dbRow = {
+          id: reportId,
+          mandi_id: String(mandiId),
+          mandi_name: mandi.name,
+          date: targetDate,
+          total_booked: totalBooked,
+          total_verified: totalVerified,
+          total_pending: totalPending,
+          total_completed: totalCompleted,
+          total_qty: totalQty,
+          total_payment: totalPayment,
+          submitted_at: submittedAt
+        };
+
+        const { data: upserted, error } = await activeSupabase
+          .from('daily_reports')
+          .upsert([dbRow])
+          .select();
+
+        if (!error && Array.isArray(upserted) && upserted.length > 0) {
+          const result = mapDailyReport(upserted[0]);
+
+          if (!this.data.dailyReports) this.data.dailyReports = [];
+          const idx = this.data.dailyReports.findIndex(r => r.id === reportId || (r.mandiId === String(mandiId) && r.date === targetDate));
+          if (idx >= 0) {
+            this.data.dailyReports[idx] = result;
+          } else {
+            this.data.dailyReports.push(result);
+          }
+          this.save();
+
+          return result;
+        } else {
+          console.warn('⚠️ [SUPABASE UPSERT WARNING] submitDailyReport fallback to local:', error?.message);
+        }
+      } catch (err) {
+        console.warn('⚠️ [SUPABASE UPSERT EXCEPTION] submitDailyReport fallback to local:', err.message);
+      }
+    }
+
+    if (!this.data.dailyReports) this.data.dailyReports = [];
+    const idx = this.data.dailyReports.findIndex(r => r.id === reportId || (r.mandiId === String(mandiId) && r.date === targetDate));
+    if (idx >= 0) {
+      this.data.dailyReports[idx] = reportObj;
+    } else {
+      this.data.dailyReports.push(reportObj);
+    }
+    this.save();
+
+    return reportObj;
   }
 
   // --- PHASE 2: SUPABASE AUTHORITATIVE CONCURRENCY-SAFE MUTATIONS ---
