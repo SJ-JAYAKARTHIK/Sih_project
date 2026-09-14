@@ -56,7 +56,9 @@ async function runEndToEndIntegrationTests() {
   // Step 1: Create Farmer Booking
   let e2eBooking;
   try {
-    // Clear any existing active booking for farmer today if present
+    // Clear any existing active booking for farmer today & test slot if present
+    await supabase.from('bookings').update({ booking_status: 'CANCELLED' }).eq('mandi_id', 'MANDI01').eq('date', e2eDate).eq('time_slot', e2eSlot);
+    db.data.bookings = db.data.bookings.filter(b => !(b.mandiId === 'MANDI01' && b.date === e2eDate && b.timeSlot === e2eSlot));
     const existing = await db.getFarmerBookings('10029384');
     const activeToday = existing.find(b => b.date === e2eDate && (b.bookingStatus || 'ACTIVE') === 'ACTIVE' && b.procurementStatus !== 'Completed');
     if (activeToday) {
@@ -179,6 +181,9 @@ async function runEndToEndIntegrationTests() {
     await handleExotelPassthru(req, res);
     return resJson;
   };
+
+  // Cleanup any previous test booking for 10029002 on 2026-09-27 to ensure idempotency
+  await supabase.from('bookings').delete().eq('farmer_id', '10029002').eq('date', '2026-09-27');
 
   // Flow: INIT -> 10029002 -> 1 (Paddy) -> 1 (Mandi) -> 2709 (Date: Sept 27) -> 0300# (Time) -> 60* (Qty) -> 1 (Confirm)
   await makeVoiceReq('10029002');

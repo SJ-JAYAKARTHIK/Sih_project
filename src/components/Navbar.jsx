@@ -365,16 +365,21 @@ export const Navbar = ({ onBackToLanding }) => {
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             style={{
               display: 'none',
-              padding: '8px',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-              border: 'none',
+              padding: '8px 12px',
+              backgroundColor: 'rgba(255, 255, 255, 0.12)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
               borderRadius: '8px',
               color: '#FFFFFF',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              minHeight: '42px'
             }}
             aria-label="Toggle menu"
           >
-            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, display: 'none' }}>Menu</span>
           </button>
         </div>
       </div>
@@ -386,44 +391,156 @@ export const Navbar = ({ onBackToLanding }) => {
         }
       `}</style>
 
-      {/* Mobile portal switcher dropdown */}
+      {/* Mobile Portal Navigation Drawer Overlay */}
       {mobileMenuOpen && (
         <div style={{
-          position: 'absolute',
+          position: 'fixed',
           top: '82px',
           left: 0,
           right: 0,
-          backgroundColor: '#11382B',
-          borderBottom: '2px solid #235E43',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
-          zIndex: 99,
-          padding: '1rem 1.5rem'
-        }}>
-          {[
-            { key: 'farmer', label: 'Farmer Portal' },
-            { key: 'mandi', label: 'Mandi Officer Portal' },
-            { key: 'admin', label: 'Admin Portal' }
-          ].map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => { setActivePortal(key); setMobileMenuOpen(false); }}
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                marginBottom: '8px',
-                borderRadius: '8px',
-                backgroundColor: activePortal === key ? '#235E43' : 'rgba(255,255,255,0.05)',
-                color: '#FFFFFF',
-                fontWeight: activePortal === key ? 700 : 500,
-                border: 'none',
-                textAlign: 'left',
-                fontSize: '0.95rem',
-                cursor: 'pointer'
-              }}
-            >
-              {label}
-            </button>
-          ))}
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 999,
+          backdropFilter: 'blur(2px)'
+        }} onClick={() => setMobileMenuOpen(false)}>
+          <div style={{
+            backgroundColor: '#11382B',
+            borderBottom: '3px solid #235E43',
+            boxShadow: '0 12px 30px rgba(0,0,0,0.4)',
+            padding: '1.25rem 1.5rem',
+            maxHeight: 'calc(100vh - 82px)',
+            overflowY: 'auto'
+          }} onClick={(e) => e.stopPropagation()}>
+
+            {/* Mobile Header Title */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '0.75rem' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#7ECEBE', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Select Portal &amp; Navigation
+              </div>
+              <button onClick={() => setMobileMenuOpen(false)} style={{ background: 'none', border: 'none', color: '#FFFFFF', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Home Link if onBackToLanding exists */}
+            {onBackToLanding && (
+              <button
+                onClick={() => { onBackToLanding(); setMobileMenuOpen(false); }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  marginBottom: '10px',
+                  borderRadius: '10px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                  color: '#FFFFFF',
+                  fontWeight: 700,
+                  border: '1px solid rgba(255, 255, 255, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  fontSize: '0.95rem',
+                  cursor: 'pointer',
+                  minHeight: '46px'
+                }}
+              >
+                <Home size={18} color="#FFFFFF" />
+                <span>Return to Home / Entry</span>
+              </button>
+            )}
+
+            {/* Portal List */}
+            {[
+              { key: 'farmer', label: t('portalFarmer') || 'Farmer Portal', icon: User },
+              { key: 'mandi', label: t('portalMandi') || 'Mandi Officer Portal', icon: Landmark },
+              { key: 'admin', label: t('portalAdmin') || 'Admin Portal', icon: Shield }
+            ].map(({ key, label, icon: IconComponent }) => (
+              <button
+                key={key}
+                onClick={() => { setActivePortal(key); setMobileMenuOpen(false); }}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  marginBottom: '10px',
+                  borderRadius: '10px',
+                  backgroundColor: activePortal === key ? '#235E43' : 'rgba(255,255,255,0.06)',
+                  color: '#FFFFFF',
+                  fontWeight: activePortal === key ? 700 : 500,
+                  border: activePortal === key ? '1px solid #86EFAC' : '1px solid rgba(255,255,255,0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  fontSize: '0.95rem',
+                  cursor: 'pointer',
+                  minHeight: '46px'
+                }}
+              >
+                <IconComponent size={18} color="#FFFFFF" />
+                <span>{label}</span>
+              </button>
+            ))}
+
+            {/* Logged in User Card & Logout in Mobile Menu */}
+            {isLoggedIn && (
+              <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px 14px', marginBottom: '10px' }}>
+                  <div style={{ fontWeight: 700, color: '#FFFFFF', fontSize: '0.9rem' }}>{displayName}</div>
+                  <div style={{ fontSize: '0.78rem', color: '#7ECEBE', marginTop: '2px' }}>{displayId}</div>
+                </div>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    backgroundColor: '#DC2626',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                    minHeight: '46px'
+                  }}
+                >
+                  <LogOut size={18} /> Logout ({displayName})
+                </button>
+              </div>
+            )}
+
+            {/* Language Switcher in Mobile Drawer */}
+            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: '0.85rem', color: '#7ECEBE', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Globe size={16} /> Select Language:
+              </div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {['EN', 'TE', 'HI'].map((langKey) => (
+                  <button
+                    key={langKey}
+                    onClick={() => changeLanguage(langKey)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      backgroundColor: language === langKey ? '#D97706' : 'rgba(255,255,255,0.1)',
+                      color: '#FFFFFF',
+                      fontWeight: 700,
+                      fontSize: '0.8rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {langKey === 'EN' ? 'English' : langKey === 'TE' ? 'తెలుగు' : 'हिंदी'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+          </div>
         </div>
       )}
     </header>
