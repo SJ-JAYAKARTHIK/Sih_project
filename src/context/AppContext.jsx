@@ -58,7 +58,7 @@ export const AppProvider = ({ children }) => {
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const defaultDevWs = `${protocol}//${window.location.hostname}:5000/ws`;
-      const defaultProdWs = `${protocol}//${window.location.host}/ws`;
+      const defaultProdWs = 'wss://sihproject-production-9ad6.up.railway.app/ws';
       const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       
       const wsUrl = import.meta.env.VITE_WS_URL || (isLocalHost ? defaultDevWs : defaultProdWs);
