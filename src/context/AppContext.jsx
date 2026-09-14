@@ -57,7 +57,11 @@ export const AppProvider = ({ children }) => {
       if (!isComponentMounted) return;
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.hostname}:5000/ws`;
+      const defaultDevWs = `${protocol}//${window.location.hostname}:5000/ws`;
+      const defaultProdWs = `${protocol}//${window.location.host}/ws`;
+      const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      
+      const wsUrl = import.meta.env.VITE_WS_URL || (isLocalHost ? defaultDevWs : defaultProdWs);
 
       ws = new WebSocket(wsUrl);
 

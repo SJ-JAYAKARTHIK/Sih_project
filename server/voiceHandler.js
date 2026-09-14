@@ -3,6 +3,10 @@ import { db } from './db.js';
 // In-memory session store for tracking active Exotel IVR calls by CallSid / sessionKey
 export const exotelSessions = new Map();
 
+// Exotel Applet Redirect URLs for Direct Backend Routing
+export const EXOTEL_SUCCESS_APPLET_URL = process.env.EXOTEL_SUCCESS_APPLET_URL || 'https://my.exotel.com/applet/success';
+export const EXOTEL_CANCEL_APPLET_URL = process.env.EXOTEL_CANCEL_APPLET_URL || 'https://my.exotel.com/applet/cancel';
+
 // Session timeout: 20 minutes (1200000 ms)
 const SESSION_TIMEOUT_MS = 20 * 60 * 1000;
 
@@ -27,33 +31,22 @@ export const cleanupExpiredSessions = () => {
 };
 
 // Dynamic Mandi query: find Mandis accepting the specified crop
-export const getCompatibleMandisForCrop = (cropId) => {
-  const allMandis = db.getMandis();
+export const getCompatibleMandisForCrop = async (cropId) => {
+  const allMandis = await db.getMandis();
+  const matched = allMandis.filter(m => Array.isArray(m.acceptedCrops) && m.acceptedCrops.includes(cropId));
+  if (matched.length > 0) return matched;
 
-  // Explicit mapping per project prompt fallback requirements
   const FALLBACK_MAP = {
-    'crop-1': ['MANDI01', 'MANDI02', 'MANDI04'], // Paddy: Warangal, Nizamabad, Khammam
-    'crop-2': ['MANDI01', 'MANDI02', 'MANDI04'], // Wheat: Warangal, Nizamabad, Khammam
-    'crop-3': ['MANDI01', 'MANDI03', 'MANDI04'], // Cotton: Warangal, Guntur, Khammam
-    'crop-4': ['MANDI01', 'MANDI02', 'MANDI04'], // Maize: Warangal, Nizamabad, Khammam
-    'crop-5': ['MANDI01', 'MANDI02', 'MANDI03'], // Pulses: Warangal, Nizamabad, Guntur
-    'crop-6': ['MANDI02', 'MANDI03', 'MANDI04']  // Gram: Nizamabad, Guntur, Khammam
+    'crop-1': ['MANDI01', 'MANDI02', 'MANDI04'],
+    'crop-2': ['MANDI02', 'MANDI04'],
+    'crop-3': ['MANDI01', 'MANDI03'],
+    'crop-4': ['MANDI01', 'MANDI04'],
+    'crop-5': ['MANDI02', 'MANDI03'],
+    'crop-6': ['MANDI03', 'MANDI04']
   };
 
   const targetIds = FALLBACK_MAP[cropId] || ['MANDI01', 'MANDI02'];
-  const matched = [];
-
-  for (const id of targetIds) {
-    const found = allMandis.find(m => m.id === id);
-    if (found) matched.push(found);
-  }
-
-  // Fallback to any mandi with acceptedCrops if map yields empty
-  if (matched.length === 0) {
-    return allMandis.filter(m => Array.isArray(m.acceptedCrops) && m.acceptedCrops.includes(cropId));
-  }
-
-  return matched;
+  return allMandis.filter(m => targetIds.includes(m.id));
 };
 
 // Date Parser: parse DDMM input to ISO date string YYYY-MM-DD
@@ -134,6 +127,16 @@ export const parseTimeInput = (inputStr) => {
 
 // SMS Service Abstraction
 export const sendBookingSms = ({ mobile, booking }) => {
+  if (!mobile) {
+    console.log('⚠️ [SMS SERVICE ABSTRACTION] No recipient mobile number provided. Returning SMS_RECIPIENT_UNAVAILABLE.');
+    return {
+      status: 'SMS_RECIPIENT_UNAVAILABLE',
+      recipient: null,
+      message: 'No recipient mobile number provided',
+      sentAt: new Date().toISOString()
+    };
+  }
+
   console.log(`📱 [SMS SERVICE ABSTRACTION] Preparing SMS dispatch to ${mobile}...`);
   const message = 
     `KrishiDwaar Booking Confirmed.\n` +
@@ -157,10 +160,16 @@ export const sendBookingSms = ({ mobile, booking }) => {
 };
 
 // Main State Machine Handler for Exotel IVR Passthru Request
-export const handleExotelPassthru = (req, res, broadcastFn = () => {}) => {
+export const handleExotelPassthru = async (req, res, broadcastFn = () => {}) => {
   // Extract CallSid or session identifier
   const callSid = req.query.CallSid || req.body?.CallSid || req.query.CallFrom || req.body?.CallFrom || req.body?.sessionKey || req.query.sessionKey || 'DEFAULT_SESSION';
   const sessionKey = String(callSid).trim();
+
+  // Extract caller phone number from Exotel request (From or CallFrom parameter)
+  const rawFrom = req.query.From || req.body?.From || req.query.from || req.body?.from || req.query.CallFrom || req.body?.CallFrom;
+  const callerNumber = (rawFrom !== undefined && rawFrom !== null && String(rawFrom).trim() !== '')
+    ? String(rawFrom).replace(/["']/g, '').trim()
+    : null;
 
   // Lookup existing session before cleanup
   let session = exotelSessions.get(sessionKey);
@@ -190,7 +199,10 @@ export const handleExotelPassthru = (req, res, broadcastFn = () => {}) => {
 
   console.log('====================================================');
   console.log('📞 [EXOTEL PASSTHRU] Incoming Voice Session Request');
+  console.log('[EXOTEL ROUTING] Input:', extractedDigits);
+  console.log('[EXOTEL ROUTING] Stage:', session ? session.stage : 'INIT');
   console.log('Session Key (CallSid):', sessionKey);
+  console.log('Caller Number (From):', callerNumber || 'NONE');
   console.log('Raw Digits:', rawDigits);
   console.log('Extracted Digits:', extractedDigits);
 
@@ -198,6 +210,7 @@ export const handleExotelPassthru = (req, res, broadcastFn = () => {}) => {
   if (!session) {
     session = {
       callSid: sessionKey,
+      callerNumber: callerNumber || null,
       farmerId: null,
       farmerName: null,
       farmerMobile: null,
@@ -217,6 +230,8 @@ export const handleExotelPassthru = (req, res, broadcastFn = () => {}) => {
       stage: 'INIT',
       lastActivity: Date.now()
     };
+  } else if (callerNumber && !session.callerNumber) {
+    session.callerNumber = callerNumber;
   }
 
   session.lastActivity = Date.now();
@@ -228,7 +243,7 @@ export const handleExotelPassthru = (req, res, broadcastFn = () => {}) => {
   if (session.stage === 'INIT') {
     if (/^\d{8}$/.test(extractedDigits)) {
       // Direct Farmer ID entry on initial call
-      const farmer = db.getFarmerById(extractedDigits);
+      const farmer = await db.getFarmerById(extractedDigits);
       if (farmer) {
         session.farmerId = farmer.id;
         session.farmerName = farmer.name;
@@ -267,7 +282,7 @@ export const handleExotelPassthru = (req, res, broadcastFn = () => {}) => {
   // 2. AWAITING_FARMER_ID
   if (session.stage === 'AWAITING_FARMER_ID') {
     if (/^\d{8}$/.test(extractedDigits)) {
-      const farmer = db.getFarmerById(extractedDigits);
+      const farmer = await db.getFarmerById(extractedDigits);
       if (farmer) {
         session.farmerId = farmer.id;
         session.farmerName = farmer.name;
@@ -321,7 +336,7 @@ export const handleExotelPassthru = (req, res, broadcastFn = () => {}) => {
       session.selectedCrop = selectedCrop;
 
       // Dynamically query compatible Mandis
-      const mandis = getCompatibleMandisForCrop(selectedCrop.id);
+      const mandis = await getCompatibleMandisForCrop(selectedCrop.id);
       session.mandiOptions = mandis.map((m, idx) => ({
         option: idx + 1,
         mandiId: m.id,
@@ -417,7 +432,7 @@ export const handleExotelPassthru = (req, res, broadcastFn = () => {}) => {
     const parsedTime = parseTimeInput(extractedDigits);
     if (parsedTime.valid) {
       // Check slot availability in database
-      const slots = db.getTimeSlots(session.selectedMandi.id, session.selectedDate);
+      const slots = await db.getTimeSlots(session.selectedMandi.id, session.selectedDate);
       const slotObj = slots.find(s => s.time === parsedTime.timeSlot);
 
       if (slotObj && !slotObj.isAvailable) {
@@ -457,8 +472,9 @@ export const handleExotelPassthru = (req, res, broadcastFn = () => {}) => {
   // 7. AWAITING_QUANTITY
   if (session.stage === 'AWAITING_QUANTITY') {
     let parsedQty = null;
-    if (/^\d{1,3}$/.test(extractedDigits)) {
-      parsedQty = parseInt(extractedDigits, 10);
+    const qtyMatch = /^(\d{1,5})\*?$/.exec(extractedDigits);
+    if (qtyMatch) {
+      parsedQty = parseInt(qtyMatch[1], 10);
     } else if (extractedDigits === '*' || extractedDigits === '#' || extractedDigits === '') {
       parsedQty = null;
     } else {
@@ -467,7 +483,7 @@ export const handleExotelPassthru = (req, res, broadcastFn = () => {}) => {
         success: false,
         stage: 'AWAITING_QUANTITY',
         error: 'INVALID_QUANTITY',
-        prompt: 'Invalid quantity format. Enter 1 to 3 digits (e.g. 90) or press star to skip.'
+        prompt: 'Invalid quantity format. Enter your expected quantity in kilograms, or press star to skip.'
       });
     }
 
@@ -475,17 +491,18 @@ export const handleExotelPassthru = (req, res, broadcastFn = () => {}) => {
     session.bookingSummary = {
       farmerName: session.farmerName,
       farmerId: session.farmerId,
+      farmerMobile: session.farmerMobile,
       crop: session.selectedCrop.name,
       mandi: session.selectedMandi.name,
-      date: session.selectedDate,
-      time: session.selectedTimeSlot,
+      date: session.selectedDateFormatted || session.selectedDate,
+      time: session.selectedTimeFormatted || session.selectedTimeSlot,
       expectedQuantity: session.expectedQuantity
     };
 
     session.stage = 'READY_FOR_CONFIRMATION';
     exotelSessions.set(sessionKey, session);
 
-    const summaryPrompt = `Your booking is for ${session.farmerName}. Crop ${session.selectedCrop.name}. Mandi ${session.selectedMandi.name}. Date ${session.selectedDateFormatted}. Time ${session.selectedTimeFormatted || session.selectedTimeSlot}. Expected quantity ${session.expectedQuantity ? session.expectedQuantity + ' kilograms' : 'not specified'}. Press 1 to confirm or 2 to cancel.`;
+    const summaryPrompt = `Farmer: ${session.farmerName}. Crop: ${session.selectedCrop.name}. Mandi: ${session.selectedMandi.name}. Date: ${session.selectedDateFormatted || session.selectedDate}. Time: ${session.selectedTimeFormatted || session.selectedTimeSlot}. Expected quantity: ${session.expectedQuantity !== null && session.expectedQuantity !== undefined ? session.expectedQuantity + ' kg' : 'Not specified'}. To confirm this booking, press 1. To cancel, press 2.`;
 
     console.log('📋 Booking Summary Created -> Stage: READY_FOR_CONFIRMATION', session.bookingSummary);
     return res.status(200).json({
@@ -498,55 +515,118 @@ export const handleExotelPassthru = (req, res, broadcastFn = () => {}) => {
 
   // 8. READY_FOR_CONFIRMATION
   if (session.stage === 'READY_FOR_CONFIRMATION') {
+    const isTestOrJson = req.path === '/api/voice/exotel/test' || req.query?.format === 'json' || req.body?.format === 'json';
+
     if (extractedDigits === '2') {
       session.stage = 'CANCELLED';
       exotelSessions.set(sessionKey, session);
 
       console.log('🚫 Booking Cancelled by Farmer');
-      return res.status(200).json({
+      const resBody = {
         success: true,
+        result: 'CANCELLED',
+        status: 'CANCELLED',
+        choice: '2',
+        action: 'CANCELLED',
+        select: '2',
+        digits: '2',
         stage: 'CANCELLED',
         prompt: 'Your booking request has been cancelled. Thank you for calling KrishiDwaar.'
-      });
+      };
+
+      if (isTestOrJson) {
+        console.log('====================================================');
+        console.log('[EXOTEL ROUTING] Input:', extractedDigits);
+        console.log('[EXOTEL ROUTING] Stage: READY_FOR_CONFIRMATION -> CANCELLED');
+        console.log('[EXOTEL ROUTING] Response:', JSON.stringify(resBody));
+        console.log('====================================================');
+        return res.status(200).json(resBody);
+      }
+
+      console.log('====================================================');
+      console.log('[EXOTEL ROUTING] Input:', extractedDigits);
+      console.log('[EXOTEL ROUTING] Stage: READY_FOR_CONFIRMATION -> CANCELLED');
+      console.log('[EXOTEL ROUTING] Response: CANCELLED');
+      console.log('====================================================');
+
+      if (typeof res.setHeader === 'function') res.setHeader('Content-Type', 'text/plain');
+      else if (typeof res.type === 'function') res.type('text/plain');
+      else if (typeof res.set === 'function') res.set('Content-Type', 'text/plain');
+
+      return res.status(200).send('CANCELLED');
     } else if (extractedDigits === '1') {
       session.stage = 'BOOKING';
 
       // --- FINAL REVALIDATION BEFORE BOOKING ---
       console.log('🔄 Re-validating session data before database entry...');
       
-      const farmer = db.getFarmerById(session.farmerId);
+      const farmer = await db.getFarmerById(session.farmerId);
       if (!farmer) {
         session.stage = 'ERROR';
         exotelSessions.set(sessionKey, session);
-        return res.status(200).json({ success: false, stage: 'ERROR', error: 'FARMER_NOT_FOUND', prompt: 'Farmer record no longer exists.' });
+        const errBody = { success: false, result: 'ERROR', status: 'ERROR', stage: 'ERROR', error: 'FARMER_NOT_FOUND', prompt: 'Farmer record no longer exists.' };
+        console.log('[EXOTEL ROUTING] Input:', extractedDigits);
+        console.log('[EXOTEL ROUTING] Stage: ERROR');
+        console.log('[EXOTEL ROUTING] Response:', JSON.stringify(errBody));
+        return res.status(200).json(errBody);
       }
 
-      const mandi = db.getMandiById(session.selectedMandi.id);
+      const mandi = await db.getMandiById(session.selectedMandi.id);
       if (!mandi) {
         session.stage = 'ERROR';
         exotelSessions.set(sessionKey, session);
-        return res.status(200).json({ success: false, stage: 'ERROR', error: 'MANDI_NOT_FOUND', prompt: 'Selected Mandi no longer exists.' });
+        const errBody = { success: false, result: 'ERROR', status: 'ERROR', stage: 'ERROR', error: 'MANDI_NOT_FOUND', prompt: 'Selected Mandi no longer exists.' };
+        console.log('[EXOTEL ROUTING] Input:', extractedDigits);
+        console.log('[EXOTEL ROUTING] Stage: ERROR');
+        console.log('[EXOTEL ROUTING] Response:', JSON.stringify(errBody));
+        return res.status(200).json(errBody);
       }
 
-      const crop = db.getCropById(session.selectedCrop.id);
+      const crop = await db.getCropById(session.selectedCrop.id);
       if (!crop) {
         session.stage = 'ERROR';
         exotelSessions.set(sessionKey, session);
-        return res.status(200).json({ success: false, stage: 'ERROR', error: 'CROP_NOT_FOUND', prompt: 'Selected crop is invalid.' });
+        const errBody = { success: false, result: 'ERROR', status: 'ERROR', stage: 'ERROR', error: 'CROP_NOT_FOUND', prompt: 'Selected crop is invalid.' };
+        console.log('[EXOTEL ROUTING] Input:', extractedDigits);
+        console.log('[EXOTEL ROUTING] Stage: ERROR');
+        console.log('[EXOTEL ROUTING] Response:', JSON.stringify(errBody));
+        return res.status(200).json(errBody);
+      }
+
+      // Revalidate Mandi accepts selected crop
+      if (Array.isArray(mandi.acceptedCrops) && !mandi.acceptedCrops.includes(crop.id)) {
+        session.stage = 'ERROR';
+        exotelSessions.set(sessionKey, session);
+        const errBody = {
+          success: false,
+          result: 'ERROR',
+          status: 'ERROR',
+          stage: 'ERROR',
+          error: 'CROP_NOT_ACCEPTED_BY_MANDI',
+          prompt: `The selected Mandi ${mandi.name} no longer accepts ${crop.name}. Please call back to reselect.`
+        };
+        console.log('[EXOTEL ROUTING] Input:', extractedDigits);
+        console.log('[EXOTEL ROUTING] Stage: ERROR');
+        console.log('[EXOTEL ROUTING] Response:', JSON.stringify(errBody));
+        return res.status(200).json(errBody);
       }
 
       // Revalidate slot capacity
-      const slots = db.getTimeSlots(session.selectedMandi.id, session.selectedDate);
+      const slots = await db.getTimeSlots(session.selectedMandi.id, session.selectedDate);
       const slotObj = slots.find(s => s.time === session.selectedTimeSlot);
       if (slotObj && !slotObj.isAvailable) {
         session.stage = 'ERROR';
         exotelSessions.set(sessionKey, session);
-        return res.status(200).json({ success: false, stage: 'ERROR', error: 'SLOT_NO_LONGER_AVAILABLE', prompt: 'This time slot was just booked by another farmer. Please try again.' });
+        const errBody = { success: false, result: 'ERROR', status: 'ERROR', stage: 'ERROR', error: 'SLOT_NO_LONGER_AVAILABLE', prompt: 'The selected time slot is no longer available. Please select another slot.' };
+        console.log('[EXOTEL ROUTING] Input:', extractedDigits);
+        console.log('[EXOTEL ROUTING] Stage: ERROR');
+        console.log('[EXOTEL ROUTING] Response:', JSON.stringify(errBody));
+        return res.status(200).json(errBody);
       }
 
       // Revalidate duplicate active booking on same date
-      const activeDuplicate = db.data.bookings.find(b => 
-        b.farmerId === session.farmerId && 
+      const farmerBookings = await db.getFarmerBookings(session.farmerId);
+      const activeDuplicate = farmerBookings.find(b => 
         b.date === session.selectedDate && 
         (b.bookingStatus || 'ACTIVE') === 'ACTIVE' && 
         b.procurementStatus !== 'Completed'
@@ -555,12 +635,16 @@ export const handleExotelPassthru = (req, res, broadcastFn = () => {}) => {
       if (activeDuplicate) {
         session.stage = 'ERROR';
         exotelSessions.set(sessionKey, session);
-        return res.status(200).json({ success: false, stage: 'ERROR', error: 'DUPLICATE_BOOKING', prompt: 'You already have an active procurement booking on this date.' });
+        const errBody = { success: false, result: 'ERROR', status: 'ERROR', stage: 'ERROR', error: 'DUPLICATE_BOOKING', prompt: 'You already have an active procurement booking on this date.' };
+        console.log('[EXOTEL ROUTING] Input:', extractedDigits);
+        console.log('[EXOTEL ROUTING] Stage: ERROR');
+        console.log('[EXOTEL ROUTING] Response:', JSON.stringify(errBody));
+        return res.status(200).json(errBody);
       }
 
       // Create Booking in DB
       try {
-        const newBooking = db.createBooking({
+        const newBooking = await db.createBooking({
           farmerId: session.farmerId,
           mandiId: session.selectedMandi.id,
           cropId: session.selectedCrop.id,
@@ -582,11 +666,21 @@ export const handleExotelPassthru = (req, res, broadcastFn = () => {}) => {
         broadcastFn('VOICE_BOOKING_CREATED', newBooking);
         broadcastFn('BOOKING_CREATED', newBooking);
 
-        // SMS Dispatch Abstraction
-        const smsResult = sendBookingSms({ mobile: session.farmerMobile, booking: newBooking });
+        // SMS Dispatch Abstraction (strictly uses session.callerNumber, NOT farmer.mobile)
+        const smsResult = sendBookingSms({ mobile: session.callerNumber, booking: newBooking });
 
-        return res.status(200).json({
+        const confirmPrompt = smsResult.status === 'SMS_PENDING_CONFIGURATION'
+          ? `Your booking has been confirmed successfully. Your booking ID is ${newBooking.id}. Your token number is ${newBooking.tokenNumber}. The booking details have been sent to your registered mobile number.`
+          : `Your booking has been confirmed successfully. Your booking ID is ${newBooking.id}. Your token number is ${newBooking.tokenNumber}.`;
+
+        const resBody = {
           success: true,
+          result: 'CONFIRMED',
+          status: 'CONFIRMED',
+          choice: '1',
+          action: 'CONFIRMED',
+          select: '1',
+          digits: '1',
           stage: 'BOOKED',
           booking: {
             bookingId: newBooking.id,
@@ -603,27 +697,69 @@ export const handleExotelPassthru = (req, res, broadcastFn = () => {}) => {
             source: newBooking.source
           },
           smsStatus: smsResult.status,
-          prompt: `Your booking has been successfully confirmed! Token number is ${newBooking.tokenNumber}. Confirmation SMS sent to your registered mobile number ${session.farmerMobile}.`
-        });
+          prompt: confirmPrompt
+        };
+
+        if (isTestOrJson) {
+          console.log('====================================================');
+          console.log('[EXOTEL ROUTING] Input:', extractedDigits);
+          console.log('[EXOTEL ROUTING] Stage: READY_FOR_CONFIRMATION -> BOOKED');
+          console.log('[EXOTEL ROUTING] Response:', JSON.stringify(resBody));
+          console.log('====================================================');
+          return res.status(200).json(resBody);
+        }
+
+        console.log('====================================================');
+        console.log('[EXOTEL ROUTING] Input:', extractedDigits);
+        console.log('[EXOTEL ROUTING] Stage: READY_FOR_CONFIRMATION -> BOOKED');
+        console.log('[EXOTEL ROUTING] Response: CONFIRMED');
+        console.log('====================================================');
+
+        if (typeof res.setHeader === 'function') res.setHeader('Content-Type', 'text/plain');
+        else if (typeof res.type === 'function') res.type('text/plain');
+        else if (typeof res.set === 'function') res.set('Content-Type', 'text/plain');
+
+        return res.status(200).send('CONFIRMED');
       } catch (err) {
         console.error('❌ Error creating voice booking:', err.message);
         session.stage = 'ERROR';
         exotelSessions.set(sessionKey, session);
-        return res.status(200).json({
+        const errBody = {
           success: false,
+          result: 'ERROR',
+          status: 'ERROR',
           stage: 'ERROR',
           error: err.message,
           prompt: `Booking creation failed: ${err.message}`
-        });
+        };
+        console.log('[EXOTEL ROUTING] Input:', extractedDigits);
+        console.log('[EXOTEL ROUTING] Stage: ERROR');
+        console.log('[EXOTEL ROUTING] Response:', JSON.stringify(errBody));
+        return res.status(200).json(errBody);
       }
     } else {
+      const summaryPrompt = `Farmer: ${session.farmerName}. Crop: ${session.selectedCrop.name}. Mandi: ${session.selectedMandi.name}. Date: ${session.selectedDateFormatted || session.selectedDate}. Time: ${session.selectedTimeFormatted || session.selectedTimeSlot}. Expected quantity: ${session.expectedQuantity !== null && session.expectedQuantity !== undefined ? session.expectedQuantity + ' kg' : 'Not specified'}. To confirm this booking, press 1. To cancel, press 2.`;
       exotelSessions.set(sessionKey, session);
-      return res.status(200).json({
+      const resBody = {
         success: false,
+        result: 'INVALID',
+        status: 'INVALID',
+        choice: 'INVALID',
+        action: 'INVALID',
+        select: 'INVALID',
+        digits: extractedDigits,
         stage: 'READY_FOR_CONFIRMATION',
         error: 'INVALID_CONFIRMATION_CHOICE',
-        prompt: 'Invalid choice. Press 1 to confirm your booking, or press 2 to cancel.'
-      });
+        prompt: summaryPrompt
+      };
+
+      console.log('====================================================');
+      console.log('[EXOTEL ROUTING] Input:', extractedDigits);
+      console.log('[EXOTEL ROUTING] Stage: READY_FOR_CONFIRMATION');
+      console.log('[EXOTEL ROUTING] Response:', JSON.stringify(resBody));
+      console.log('====================================================');
+
+      return res.status(200).json(resBody);
     }
   }
 
@@ -636,3 +772,98 @@ export const handleExotelPassthru = (req, res, broadcastFn = () => {}) => {
       : 'Your session has ended.'
   });
 };
+
+// Dynamic Greeting Endpoint Handler for Exotel IVR
+export const handleExotelGreeting = (req, res) => {
+  const method = (req.method || 'GET').toUpperCase();
+  const callSid = req.query.CallSid || req.query.callSid || req.query.call_sid || req.query.CallFrom || req.query.sessionKey || req.body?.CallSid || req.body?.callSid || req.body?.sessionKey;
+
+  const sessionKey = callSid ? String(callSid).trim() : '';
+  let session = sessionKey ? exotelSessions.get(sessionKey) : null;
+
+  // Missing session or expired session (20 mins timeout)
+  if (session && (Date.now() - session.lastActivity > SESSION_TIMEOUT_MS)) {
+    exotelSessions.delete(sessionKey);
+    session = null;
+  }
+
+  const sessionFound = Boolean(session);
+  const sessionStage = session ? session.stage : 'NONE';
+  const selectedCrop = session ? session.selectedCrop : null;
+  const mandiOptions = session ? session.mandiOptions : [];
+
+  let prompt = '';
+  let statusCode = 200;
+
+  if (!session) {
+    statusCode = 404;
+    prompt = 'Your session has expired. Please call again.';
+  } else {
+    statusCode = 200;
+    if (session.stage === 'AWAITING_MANDI') {
+      if (session.selectedCrop && Array.isArray(session.mandiOptions) && session.mandiOptions.length > 0) {
+        prompt = `Your selected crop is ${session.selectedCrop.name}. The following Mandis accept this crop. ` +
+          session.mandiOptions.map(m => `Press ${m.option} for ${m.mandiName}.`).join(' ');
+      } else {
+        prompt = 'We could not find available Mandis for your selected crop. Please try again.';
+      }
+    } else if (session.stage === 'INIT' || session.stage === 'AWAITING_FARMER_ID') {
+      prompt = 'Welcome to KrishiDwaar Smart Farmer Booking. Please enter your 8-digit Farmer ID.';
+    } else if (session.stage === 'AWAITING_CROP') {
+      prompt = `Farmer ID verified for ${session.farmerName || 'farmer'}. Please select your crop: Press 1 for Paddy, 2 for Wheat, 3 for Cotton, 4 for Maize, 5 for Pulses, 6 for Gram.`;
+    } else if (session.stage === 'AWAITING_DATE') {
+      prompt = `You selected ${session.selectedMandi?.name || 'Mandi'}. Please enter your visit date in 4 digits DDMM format. For example, 1409 for September 14th.`;
+    } else if (session.stage === 'AWAITING_TIME') {
+      prompt = `Date set for ${session.selectedDateFormatted || session.selectedDate}. Please enter your preferred arrival time using 4 digits followed by star for AM or hash for PM.`;
+    } else if (session.stage === 'AWAITING_QUANTITY') {
+      prompt = `Time slot set for ${session.selectedTimeFormatted || session.selectedTimeSlot}. Please enter your expected crop quantity in kilograms, or press star to skip.`;
+    } else if (session.stage === 'READY_FOR_CONFIRMATION') {
+      prompt = `Farmer: ${session.farmerName}. Crop: ${session.selectedCrop ? session.selectedCrop.name : 'Crop'}. Mandi: ${session.selectedMandi ? session.selectedMandi.name : 'Mandi'}. Date: ${session.selectedDateFormatted || session.selectedDate}. Time: ${session.selectedTimeFormatted || session.selectedTimeSlot}. Expected quantity: ${session.expectedQuantity !== null && session.expectedQuantity !== undefined ? session.expectedQuantity + ' kg' : 'Not specified'}. To confirm this booking, press 1. To cancel, press 2.`;
+    } else if (session.stage === 'BOOKED') {
+      const mandiStr = session.selectedMandi?.name || 'Mandi';
+      const cropStr = session.selectedCrop?.name || 'Crop';
+      const dateStr = session.selectedDateFormatted || session.selectedDate || 'Date';
+      const timeStr = session.selectedTimeFormatted || session.selectedTimeSlot || 'Time';
+      const qtyStr = (session.expectedQuantity !== null && session.expectedQuantity !== undefined)
+        ? `${session.expectedQuantity} kilograms`
+        : 'Not specified';
+
+      prompt = `Your booking has been confirmed successfully. Your booking ID is ${session.bookingId}. Your token number is ${session.tokenNumber}. Your mandi is ${mandiStr}. Your crop is ${cropStr}. Your date is ${dateStr}. Your time slot is ${timeStr}. Your expected quantity is ${qtyStr}. Thank you for using KrishiDwaar.`;
+    } else if (session.stage === 'CANCELLED') {
+      prompt = 'Your booking has been cancelled successfully. No slot has been booked. Thank you for using KrishiDwaar.';
+    } else {
+      prompt = 'Your session is active. Please continue your request.';
+    }
+  }
+
+  // Detailed Logging Requirement 1 & 4
+  console.log('====================================================');
+  console.log('🗣️ [EXOTEL DYNAMIC GREETING] Incoming Greeting Request');
+  console.log('HTTP Method:', method);
+  console.log('CallSid:', callSid || 'NONE');
+  console.log('Session Found:', sessionFound);
+  console.log('Current Session Stage:', sessionStage);
+  console.log('Selected Crop:', selectedCrop ? selectedCrop.name : 'NONE');
+  console.log('Mandi Options:', mandiOptions);
+  console.log('Generated Prompt:', prompt);
+  console.log('Response Status:', statusCode);
+  console.log('====================================================');
+
+  if (typeof res.setHeader === 'function') {
+    res.setHeader('Content-Type', 'text/plain');
+  } else if (typeof res.set === 'function') {
+    res.set('Content-Type', 'text/plain');
+  } else if (typeof res.type === 'function') {
+    res.type('text/plain');
+  }
+
+  if (method === 'HEAD') {
+    return res.status(statusCode).end();
+  }
+
+  return res.status(statusCode).send(prompt);
+};
+
+
+
+
