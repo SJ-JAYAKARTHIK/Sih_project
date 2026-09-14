@@ -3,11 +3,12 @@
 export const translations = {
   EN: {
     // Navigation
-    brandTitle: "AgriProcure System",
+    brandTitle: "KrishiDwaar System",
     portalFarmer: "Farmer Portal",
     portalMandi: "Mandi Officer Portal",
     portalAdmin: "Admin Portal",
     navHome: "Home Dashboard",
+    navRecentBookings: "Recent Slot Bookings",
     navBookSlot: "Book Slot",
     navBills: "Bills & Transactions",
     navProfile: "My Profile",
@@ -120,11 +121,12 @@ export const translations = {
 
   TE: {
     // Navigation
-    brandTitle: "అగ్రి-ప్రొక్యూర్ సిస్టమ్",
+    brandTitle: "కృషిద్వార్ సిస్టమ్",
     portalFarmer: "రైతు పోర్టల్",
     portalMandi: "మండి అధికారి పోర్టల్",
     portalAdmin: "అడ్మిన్ పోర్టల్",
     navHome: "హోమ్ డాష్‌బోర్డ్",
+    navRecentBookings: "ఇటీవలి స్లాట్ బుకింగ్‌లు",
     navBookSlot: "స్లాట్ బుక్ చేయండి",
     navBills: "బిల్‌లు & లావాదేవీలు",
     navProfile: "నా ప్రొఫైల్",
@@ -237,11 +239,12 @@ export const translations = {
 
   HI: {
     // Navigation
-    brandTitle: "एग्री-प्रोक्योर सिस्टम",
+    brandTitle: "कृषिद्वार सिस्टम",
     portalFarmer: "किसान पोर्टल",
     portalMandi: "मंडी अधिकारी पोर्टल",
     portalAdmin: "एडमिन पोर्टल",
     navHome: "होम डैशबोर्ड",
+    navRecentBookings: "हाल की स्लॉट बुकिंग",
     navBookSlot: "स्लॉट बुक करें",
     navBills: "बिल एवं लेनदेन",
     navProfile: "मेरी प्रोफाइल",

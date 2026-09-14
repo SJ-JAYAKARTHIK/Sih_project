@@ -1,0 +1,36 @@
+Recreate the KrishiDwaar Admin Portal dashboard EXACTLY from the supplied reference image and the attached asset pack.
+
+IMPORTANT:
+- Keep the product name exactly “KrishiDwaar”.
+- Do NOT change, rename, remove, rearrange, or invent any existing feature.
+- Preserve the exact visual hierarchy, spacing, proportions, rounded corners, borders, shadows, typography scale, icon placement, colors, and responsive behavior shown in the reference.
+- Use the supplied image assets directly where appropriate rather than substituting generic illustrations.
+- The page should be a polished production admin dashboard, not a redesign.
+
+LAYOUT TO REPRODUCE:
+1. Top header: dark deep-green horizontal bar, KrishiDwaar logo at left, then Farmer Portal, Mandi Officer Portal and highlighted Admin Portal navigation. Language selector and Admin profile control are on the right.
+2. State Overview banner directly below the header: white/very-light green rounded panel, shield icon on the left, “Admin Portal — State Overview”, subtitle, date control, Refresh control, and agricultural landscape illustration extending across the right.
+3. Tab navigation below banner: Executive Dashboard (active with green underline), Mandi Analysis, Farmer Analysis, Reports (0), Complaints.
+4. KPI grid: four cards in the first row and four cards in the second row. Preserve the individual card accent colors and icons:
+   - Total Mandis
+   - Total Farmers
+   - Today’s Bookings
+   - Verified Arrivals
+   - Pending / Not Arrived
+   - Completed Procurements
+   - Total Qty Procured
+   - Total Payment Processed
+5. Main “Mandi Activity & Performance” panel: large white rounded container with green-tinted section heading, subtitle, filter dropdown, and a full-width table.
+6. Table columns exactly as shown: MANDI & LOCATION, BOOKINGS, VERIFIED, PENDING, COMPLETED, QTY PROCURED, PAYMENT, STATUS.
+7. Preserve the exact row styling, separators, location-pin icons, green ARRIVED pills, amber PENDING pills, green ACTIVE pills, quantities, payment values, and spacing.
+8. Bottom area: very light agricultural background treatment, bottom-left and bottom-right leaf/landscape decorations, and the centered footer text.
+9. Maintain the overall pale green/white agricultural visual language and generous whitespace.
+
+TECHNICAL IMPLEMENTATION:
+- Build the interface with clean reusable components: Header, OverviewBanner, DashboardTabs, KPICard, PerformancePanel, DataTable, StatusPill, Footer.
+- Use CSS variables for the palette, spacing, radii, borders and shadows so the design remains easy to maintain.
+- Use the supplied assets from the asset pack for the logo, agricultural landscape, decorative elements and exact visual references.
+- Keep all text and values visible in the reference unchanged unless the application requires dynamic data.
+- Make the dashboard responsive while preserving the desktop composition shown in the reference.
+- Do not add charts, sidebars, extra buttons, extra cards, gradients, glassmorphism, or other UI that is not present in the reference.
+- Do not modernize or reinterpret the design. The goal is a pixel-faithful KrishiDwaar Admin Portal recreation.

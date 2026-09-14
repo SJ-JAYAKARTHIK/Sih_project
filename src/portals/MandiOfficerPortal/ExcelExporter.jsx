@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { FileSpreadsheet } from 'lucide-react';
 
-export const ExcelExporter = ({ mandiId, mandiName, dateStr }) => {
+export const ExcelExporter = ({ mandiId, mandiName, dateStr, className }) => {
   const [loading, setLoading] = useState(false);
 
   const handleExportExcel = async () => {
@@ -36,7 +36,8 @@ export const ExcelExporter = ({ mandiId, mandiName, dateStr }) => {
         'Price Paid (₹)':             b.pricePaid != null ? b.pricePaid : 0,
         'Rate per Quintal (₹)':       b.ratePerQuintal != null ? b.ratePerQuintal : 'N/A',
         'Billed By (Officer)':        b.billedBy || (b.procurementStatus === 'Completed' ? 'Mandi Officer' : 'N/A'),
-        'Transaction Ref':            b.paymentRef || 'N/A'
+        'Transaction Ref':            b.paymentRef || 'N/A',
+        'Dispute / Complaint Status': b.complaintStatus || 'None'
       }));
 
       // Create Worksheet
@@ -66,13 +67,13 @@ export const ExcelExporter = ({ mandiId, mandiName, dateStr }) => {
 
   return (
     <button
-      className="btn btn-secondary btn-sm"
+      className={className || "btn btn-secondary btn-sm"}
       onClick={handleExportExcel}
       disabled={loading}
       title="Export today's records to Excel file (with billing data)"
     >
-      <FileSpreadsheet size={16} color="#059669" />
-      {loading ? 'Generating...' : 'Export to Excel (.xlsx)'}
+      <FileSpreadsheet size={15} color="#059669" />
+      <span>{loading ? 'Generating...' : 'Export to Excel (.xlsx)'}</span>
     </button>
   );
 };

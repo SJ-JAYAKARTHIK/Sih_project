@@ -51,18 +51,30 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     let ws = null;
     let reconnectTimer = null;
+    let isComponentMounted = true;
 
     const connectWebSocket = () => {
+      if (!isComponentMounted) return;
+
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.hostname}:5000/ws`;
+      const defaultDevWs = `${protocol}//${window.location.hostname}:5000/ws`;
+      const defaultProdWs = 'wss://sihproject-production-9ad6.up.railway.app/ws';
+      const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      
+      const wsUrl = import.meta.env.VITE_WS_URL || (isLocalHost ? defaultDevWs : defaultProdWs);
 
       ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
+        if (!isComponentMounted) {
+          ws.close();
+          return;
+        }
         setWsConnected(true);
       };
 
       ws.onmessage = (event) => {
+        if (!isComponentMounted) return;
         try {
           const payload = JSON.parse(event.data);
           if (payload.event && payload.event !== 'CONNECTED') {
@@ -71,7 +83,9 @@ export const AppProvider = ({ children }) => {
 
             // Auto dismiss notification banner after 5 seconds
             setTimeout(() => {
-              setRealtimeNotification(null);
+              if (isComponentMounted) {
+                setRealtimeNotification(null);
+              }
             }, 5000);
           }
         } catch (e) {
@@ -80,21 +94,33 @@ export const AppProvider = ({ children }) => {
       };
 
       ws.onclose = () => {
+        if (!isComponentMounted) return;
         setWsConnected(false);
         // Try reconnect in 3s
         reconnectTimer = setTimeout(connectWebSocket, 3000);
       };
 
-      ws.onerror = (err) => {
-        ws.close();
+      ws.onerror = () => {
+        // Ignored
       };
     };
 
     connectWebSocket();
 
     return () => {
-      if (ws) ws.close();
+      isComponentMounted = false;
       if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (ws) {
+        ws.onclose = null;
+        ws.onerror = null;
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.close();
+        } else if (ws.readyState === WebSocket.CONNECTING) {
+          ws.onopen = () => {
+            ws.close();
+          };
+        }
+      }
     };
   }, []);
 
@@ -102,7 +128,8 @@ export const AppProvider = ({ children }) => {
   const loginFarmer = (farmerObj) => {
     setFarmerUser(farmerObj);
     localStorage.setItem('agri_farmer', JSON.stringify(farmerObj));
-    if (farmerObj.language) {
+    const savedLang = localStorage.getItem('agri_lang');
+    if (!savedLang && farmerObj.language) {
       changeLanguage(farmerObj.language);
     }
   };

@@ -32,20 +32,18 @@ export const MandiHistory = ({ mandiId, mandiName }) => {
 
   return (
     <div className="card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+      <div className="section-header">
         <div>
-          <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Mandi Procurement History</h3>
-          <p style={{ color: '#6B7280', fontSize: '0.85rem', margin: 0 }}>
-            Review historical working days, arrivals, billing details and Billed By records
-          </p>
+          <h3 className="section-title">Mandi Procurement History</h3>
+          <div className="section-subtitle">Review historical days, arrivals, billing and officer records</div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', backgroundColor: '#F3F4F6', padding: '0.375rem 0.75rem', borderRadius: '8px' }}>
-            <Calendar size={16} color="#D97706" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', backgroundColor: 'var(--surface-muted)', padding: '0.375rem 0.75rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+            <Calendar size={15} color="var(--primary)" />
             <input
               type="date"
-              style={{ border: 'none', background: 'transparent', fontWeight: 600, fontSize: '0.9rem', color: '#111827', outline: 'none' }}
+              style={{ border: 'none', background: 'transparent', fontWeight: 600, fontSize: '0.875rem', color: 'var(--text)', outline: 'none' }}
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
             />

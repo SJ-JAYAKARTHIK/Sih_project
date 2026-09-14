@@ -1,0 +1,154 @@
+{
+  "source_file": "a_wide_clean_modern_desktop_web_application_dash.png",
+  "source_size_px": [
+    1672,
+    941
+  ],
+  "note": "These are pixel-faithful reference crops from the flattened screenshot. Recreate live text, charts, controls and icons as HTML/CSS/SVG/components where appropriate rather than rasterizing the UI.",
+  "assets": {
+    "01_brand_header.png": {
+      "crop_box_xyxy": [
+        25,
+        0,
+        330,
+        82
+      ],
+      "native_size_px": [
+        305,
+        82
+      ]
+    },
+    "02_top_portal_navigation.png": {
+      "crop_box_xyxy": [
+        500,
+        0,
+        1090,
+        82
+      ],
+      "native_size_px": [
+        590,
+        82
+      ]
+    },
+    "03_language_and_profile.png": {
+      "crop_box_xyxy": [
+        1200,
+        0,
+        1665,
+        82
+      ],
+      "native_size_px": [
+        465,
+        82
+      ]
+    },
+    "04_left_sidebar.png": {
+      "crop_box_xyxy": [
+        0,
+        75,
+        230,
+        900
+      ],
+      "native_size_px": [
+        230,
+        825
+      ]
+    },
+    "05_mandi_identity_header.png": {
+      "crop_box_xyxy": [
+        235,
+        88,
+        1620,
+        180
+      ],
+      "native_size_px": [
+        1385,
+        92
+      ]
+    },
+    "06_action_navigation.png": {
+      "crop_box_xyxy": [
+        800,
+        100,
+        1610,
+        175
+      ],
+      "native_size_px": [
+        810,
+        75
+      ]
+    },
+    "07_kpi_cards.png": {
+      "crop_box_xyxy": [
+        235,
+        195,
+        1620,
+        370
+      ],
+      "native_size_px": [
+        1385,
+        175
+      ]
+    },
+    "08_eod_summary.png": {
+      "crop_box_xyxy": [
+        235,
+        390,
+        1620,
+        530
+      ],
+      "native_size_px": [
+        1385,
+        140
+      ]
+    },
+    "09_performance_section.png": {
+      "crop_box_xyxy": [
+        235,
+        470,
+        1340,
+        655
+      ],
+      "native_size_px": [
+        1105,
+        185
+      ]
+    },
+    "10_quick_actions_panel.png": {
+      "crop_box_xyxy": [
+        1350,
+        470,
+        1665,
+        850
+      ],
+      "native_size_px": [
+        315,
+        380
+      ]
+    },
+    "11_recent_activity_table.png": {
+      "crop_box_xyxy": [
+        235,
+        650,
+        1340,
+        910
+      ],
+      "native_size_px": [
+        1105,
+        260
+      ]
+    },
+    "12_agriculture_sidebar_illustration.png": {
+      "crop_box_xyxy": [
+        0,
+        470,
+        230,
+        900
+      ],
+      "native_size_px": [
+        230,
+        430
+      ]
+    }
+  }
+}
