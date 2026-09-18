@@ -736,11 +736,7 @@ export const handleExotelPassthru = async (req, res, broadcastFn = () => {}) => 
         console.log('[EXOTEL ROUTING] Response: CONFIRMED');
         console.log('====================================================');
 
-        if (typeof res.setHeader === 'function') res.setHeader('Content-Type', 'text/plain');
-        else if (typeof res.type === 'function') res.type('text/plain');
-        else if (typeof res.set === 'function') res.set('Content-Type', 'text/plain');
-
-        return res.status(200).send('CONFIRMED');
+        return res.status(200).type('text/plain').send('CONFIRMED');
       } catch (err) {
         console.error('❌ Error creating voice booking:', err.message);
         session.stage = 'ERROR';
