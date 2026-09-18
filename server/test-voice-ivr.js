@@ -118,15 +118,15 @@ assert(
   'Step 4: Selected Mandi Option 1 (Nizamabad APMC Mandi) -> AWAITING_DATE'
 );
 
-// Step 5: Select Date 1409 (14 September)
-req = { query: { CallSid: happyCallSid, digits: '1409' } };
+// Step 5: Select Date 2509 (25 September)
+req = { query: { CallSid: happyCallSid, digits: '2509' } };
 res = createMockRes();
 await handleExotelPassthru(req, res);
 assert(
   res.data.success === true &&
   res.data.stage === 'AWAITING_TIME' &&
-  res.data.date === '2026-09-14',
-  'Step 5: Entered Date 1409 -> AWAITING_TIME (Converted to 2026-09-14)'
+  res.data.date === '2026-09-25',
+  'Step 5: Entered Date 2509 -> AWAITING_TIME (Converted to 2026-09-25)'
 );
 
 // Step 6: Select Time 0300# (3:00 PM -> 15:00 - 15:30)
@@ -177,7 +177,7 @@ const happyCallSid2 = 'TEST_HAPPY_PASSTHRU_' + Date.now();
 await handleExotelPassthru({ query: { CallSid: happyCallSid2, From: '9123456789', digits: '10029384' } }, createMockRes());
 await handleExotelPassthru({ query: { CallSid: happyCallSid2, digits: '5' } }, createMockRes());
 await handleExotelPassthru({ query: { CallSid: happyCallSid2, digits: '1' } }, createMockRes());
-await handleExotelPassthru({ query: { CallSid: happyCallSid2, digits: '1509' } }, createMockRes());
+await handleExotelPassthru({ query: { CallSid: happyCallSid2, digits: '2609' } }, createMockRes());
 await handleExotelPassthru({ query: { CallSid: happyCallSid2, digits: '0400#' } }, createMockRes());
 await handleExotelPassthru({ query: { CallSid: happyCallSid2, digits: '100*' } }, createMockRes());
 
@@ -208,7 +208,7 @@ const farmerBookings = await db.getFarmerBookings('10029384');
 const isFoundInFarmerPortal = farmerBookings.some(b => b.source === 'VOICE_IVR');
 assert(isFoundInFarmerPortal, 'Step 10: Voice booking visible in Farmer Portal database query');
 
-const mandiBookings = await db.getMandiBookings('MANDI02', '2026-09-14');
+const mandiBookings = await db.getMandiBookings('MANDI02', '2026-09-25');
 const isFoundInMandiPortal = mandiBookings.some(b => b.source === 'VOICE_IVR');
 assert(isFoundInMandiPortal, 'Step 11: Voice booking visible in Mandi Officer database query');
 
@@ -256,8 +256,8 @@ await handleExotelPassthru(req, res);
 assert(res.data.success === false && res.data.stage === 'AWAITING_DATE' && res.data.error === 'PAST_DATE', 'Test 2.4: Past date 0101 rejected with PAST_DATE error');
 
 // Test 2.5: Invalid Time format
-// Set valid date 1409
-req = { query: { CallSid: negCall2, digits: '1409' } };
+// Set valid date 2509
+req = { query: { CallSid: negCall2, digits: '2509' } };
 res = createMockRes();
 await handleExotelPassthru(req, res);
 // Enter invalid time 2500*
@@ -563,6 +563,180 @@ assert(
   res.data.smsStatus === 'SMS_RECIPIENT_UNAVAILABLE' &&
   !res.data.prompt.includes('sent to your'),
   'Test 5.4: Missing callerNumber returns SMS_RECIPIENT_UNAVAILABLE and prompt does not claim SMS was sent'
+);
+
+console.log('\n📌 Scenario 6: 4-Tier Exotel Dynamic Greeting & Unambiguous Fallback Suite');
+
+// Clean up RAM sessions for clean test state
+exotelSessions.clear();
+
+// Test A: Caller uses registered mobile → works
+const callSidReg = 'SID_REG_' + Date.now();
+await handleExotelPassthru({ query: { CallSid: callSidReg, From: '9876543210', digits: '10029384' } }, createMockRes());
+await handleExotelPassthru({ query: { CallSid: callSidReg, digits: '5' } }, createMockRes());
+await handleExotelPassthru({ query: { CallSid: callSidReg, digits: '1' } }, createMockRes());
+await handleExotelPassthru({ query: { CallSid: callSidReg, digits: '2709' } }, createMockRes());
+await handleExotelPassthru({ query: { CallSid: callSidReg, digits: '0300#' } }, createMockRes());
+await handleExotelPassthru({ query: { CallSid: callSidReg, digits: '100*' } }, createMockRes());
+await handleExotelPassthru({ query: { CallSid: callSidReg, digits: '1', format: 'json' } }, createMockRes());
+
+req = { method: 'GET', query: { CallSid: callSidReg } };
+res = createMockRes();
+await handleExotelGreeting(req, res);
+assert(
+  res.statusCode === 200 &&
+  res.headers['Content-Type'] === 'text/plain' &&
+  res.data.includes('Your booking has been confirmed successfully'),
+  'Test 6.A: Caller using registered mobile -> booking & Dynamic Greeting work cleanly'
+);
+
+// Test B & C: Caller uses different mobile but valid Farmer ID (e.g. borrowed phone 9988112233)
+const callSidDiff = 'SID_DIFF_' + Date.now();
+// Clean up any old test bookings for 10029384 on 2809
+db.data.bookings = db.data.bookings.filter(b => b.farmerId !== '10029384' || b.date !== '2026-09-28');
+db.save();
+
+await handleExotelPassthru({ query: { CallSid: callSidDiff, From: '9988112233', digits: '10029384' } }, createMockRes());
+await handleExotelPassthru({ query: { CallSid: callSidDiff, digits: '5' } }, createMockRes());
+await handleExotelPassthru({ query: { CallSid: callSidDiff, digits: '1' } }, createMockRes());
+await handleExotelPassthru({ query: { CallSid: callSidDiff, digits: '2809' } }, createMockRes());
+await handleExotelPassthru({ query: { CallSid: callSidDiff, digits: '0300#' } }, createMockRes());
+await handleExotelPassthru({ query: { CallSid: callSidDiff, digits: '50*' } }, createMockRes());
+await handleExotelPassthru({ query: { CallSid: callSidDiff, digits: '1', format: 'json' } }, createMockRes());
+
+// Test C: Missing CallSid + different caller mobile (9988112233) -> Dynamic Greeting finds RAM session via CALLER_NUMBER
+req = { method: 'GET', query: { From: '+919988112233' } }; // Missing CallSid
+res = createMockRes();
+await handleExotelGreeting(req, res);
+assert(
+  res.statusCode === 200 &&
+  res.headers['Content-Type'] === 'text/plain' &&
+  res.data.includes('50 kilograms'),
+  'Test 6.B & 6.C: Borrowed phone 9988112233 with valid Farmer ID 10029384 -> Dynamic Greeting succeeds without CallSid via CALLER_NUMBER'
+);
+
+// Test D & G: Two recent bookings for same farmer in DB + RAM cleared → Greeting MUST NOT guess (returns 404)
+exotelSessions.clear(); // Wipe RAM sessions to force Tier 4 DB fallback
+
+const farmerAmbiguousId = '30918274'; // Rajesh Singh
+const recentTime1 = new Date(Date.now() - 60000).toISOString();
+const recentTime2 = new Date(Date.now() - 30000).toISOString();
+
+const b1 = {
+  id: 'BK-AMBIG-1',
+  tokenNumber: 'TKN-AMBIG-1',
+  qrPayload: JSON.stringify({ token: 'TKN-AMBIG-1' }),
+  farmerId: farmerAmbiguousId,
+  farmerName: 'Rajesh Singh',
+  mobile: '9988776655',
+  mandiId: 'MANDI01',
+  mandiName: 'Warangal Agriculture Market',
+  cropId: 'crop-1',
+  cropName: 'Paddy',
+  date: '2026-09-29',
+  timeSlot: '09:00 - 09:30',
+  expectedQty: 100,
+  bookingStatus: 'ACTIVE',
+  source: 'VOICE_IVR',
+  createdAt: recentTime1
+};
+
+const b2 = {
+  id: 'BK-AMBIG-2',
+  tokenNumber: 'TKN-AMBIG-2',
+  qrPayload: JSON.stringify({ token: 'TKN-AMBIG-2' }),
+  farmerId: farmerAmbiguousId,
+  farmerName: 'Rajesh Singh',
+  mobile: '9988776655',
+  mandiId: 'MANDI02',
+  mandiName: 'Nizamabad APMC Mandi',
+  cropId: 'crop-2',
+  cropName: 'Wheat',
+  date: '2026-09-30',
+  timeSlot: '10:00 - 10:30',
+  expectedQty: 200,
+  bookingStatus: 'ACTIVE',
+  source: 'VOICE_IVR',
+  createdAt: recentTime2
+};
+
+db.data.bookings.unshift(b1, b2);
+db.save();
+
+if (supabase) {
+  await supabase.from('bookings').upsert([
+    { id: b1.id, token_number: b1.tokenNumber, qr_payload: b1.qrPayload, farmer_id: b1.farmerId, farmer_name: b1.farmerName, mobile: b1.mobile, mandi_id: b1.mandiId, mandi_name: b1.mandiName, crop_id: b1.cropId, crop_name: b1.cropName, date: b1.date, time_slot: b1.timeSlot, expected_qty: b1.expectedQty, booking_status: 'ACTIVE', source: 'VOICE_IVR', created_at: recentTime1 },
+    { id: b2.id, token_number: b2.tokenNumber, qr_payload: b2.qrPayload, farmer_id: b2.farmerId, farmer_name: b2.farmerName, mobile: b2.mobile, mandi_id: b2.mandiId, mandi_name: b2.mandiName, crop_id: b2.cropId, crop_name: b2.cropName, date: b2.date, time_slot: b2.timeSlot, expected_qty: b2.expectedQty, booking_status: 'ACTIVE', source: 'VOICE_IVR', created_at: recentTime2 }
+  ]);
+}
+
+// Request Dynamic Greeting for 9988776655 without CallSid or exact bookingId -> Ambiguous count = 2 -> MUST RETURN 404
+req = { method: 'GET', query: { From: '9988776655' } };
+res = createMockRes();
+await handleExotelGreeting(req, res);
+assert(
+  res.statusCode === 404 &&
+  res.data === 'Your session has expired. Please call again.',
+  'Test 6.D & 6.G: Two recent bookings for same farmer -> Dynamic Greeting refuses to guess and returns HTTP 404 Session Expired'
+);
+
+// Test F: Exact booking/session correlation (Tier 3) -> resolves exact booking even when ambiguous by phone!
+req = { method: 'GET', query: { bookingId: 'BK-AMBIG-1' } };
+res = createMockRes();
+await handleExotelGreeting(req, res);
+assert(
+  res.statusCode === 200 &&
+  res.headers['Content-Type'] === 'text/plain' &&
+  res.data.includes('BK-AMBIG-1') &&
+  res.data.includes('TKN-AMBIG-1'),
+  'Test 6.F (Tier 3): Exact bookingId correlation resolves correct booking BK-AMBIG-1 cleanly'
+);
+
+// Test E: Farmer A and Farmer B Concurrent Call Isolation
+const callSidFarmerA = 'SID_ISOLATION_A_' + Date.now();
+const callSidFarmerB = 'SID_ISOLATION_B_' + Date.now();
+
+exotelSessions.set(callSidFarmerA, {
+  callSid: callSidFarmerA,
+  callerNumber: '9876543210',
+  farmerId: '10029384',
+  farmerName: 'Ramesh Verma',
+  stage: 'BOOKED',
+  bookingId: 'BK-ISO-A',
+  tokenNumber: 'TKN-ISO-A',
+  lastActivity: Date.now()
+});
+
+exotelSessions.set(callSidFarmerB, {
+  callSid: callSidFarmerB,
+  callerNumber: '9123456789',
+  farmerId: '10029002',
+  farmerName: 'Lakshmi Narasimha',
+  stage: 'BOOKED',
+  bookingId: 'BK-ISO-B',
+  tokenNumber: 'TKN-ISO-B',
+  lastActivity: Date.now()
+});
+
+let resA = createMockRes();
+let resB = createMockRes();
+await handleExotelGreeting({ method: 'GET', query: { From: '9876543210' } }, resA);
+await handleExotelGreeting({ method: 'GET', query: { From: '9123456789' } }, resB);
+
+assert(
+  resA.data.includes('TKN-ISO-A') &&
+  !resA.data.includes('TKN-ISO-B') &&
+  resB.data.includes('TKN-ISO-B') &&
+  !resB.data.includes('TKN-ISO-A'),
+  'Test 6.E: Concurrency Isolation — Farmer A receives only Farmer A booking, Farmer B receives only Farmer B booking'
+);
+
+// Test HEAD Request Support
+let resHead = createMockRes();
+await handleExotelGreeting({ method: 'HEAD', query: { From: '9876543210' } }, resHead);
+assert(
+  resHead.statusCode === 200 && resHead.data === null,
+  'Test 6.HEAD: HEAD request returns HTTP 200 without prompt body'
 );
 
 console.log('\n====================================================');

@@ -10,6 +10,27 @@ export const EXOTEL_CANCEL_APPLET_URL = process.env.EXOTEL_CANCEL_APPLET_URL || 
 // Session timeout: 20 minutes (1200000 ms)
 const SESSION_TIMEOUT_MS = 20 * 60 * 1000;
 
+// Configurable DB fallback window: 10 minutes (600000 ms)
+export const RECENT_BOOKING_WINDOW_MS = 10 * 60 * 1000;
+
+// Phone number normalization helper: handles +91, 91, 0 prefixes safely
+export const normalizePhoneNumber = (phoneStr) => {
+  if (!phoneStr || typeof phoneStr !== 'string') return null;
+  let digits = String(phoneStr).replace(/["'\s\-\(\)]/g, '').trim();
+  if (digits.startsWith('+')) {
+    digits = digits.slice(1);
+  }
+  if (/^91\d{10}$/.test(digits)) {
+    digits = digits.slice(2);
+  } else if (/^0\d{10}$/.test(digits)) {
+    digits = digits.slice(1);
+  }
+  if (/^\d{10}$/.test(digits)) {
+    return digits;
+  }
+  return digits.length > 0 ? digits : null;
+};
+
 // Centralized Crop Map (1-6 as configured in IVR)
 export const CROP_MAP = {
   '1': { id: 'crop-1', name: 'Paddy' },
@@ -161,15 +182,15 @@ export const sendBookingSms = ({ mobile, booking }) => {
 
 // Main State Machine Handler for Exotel IVR Passthru Request
 export const handleExotelPassthru = async (req, res, broadcastFn = () => {}) => {
-  // Extract CallSid or session identifier
-  const callSid = req.query.CallSid || req.body?.CallSid || req.query.CallFrom || req.body?.CallFrom || req.body?.sessionKey || req.query.sessionKey || 'DEFAULT_SESSION';
-  const sessionKey = String(callSid).trim();
-
   // Extract caller phone number from Exotel request (From or CallFrom parameter)
   const rawFrom = req.query.From || req.body?.From || req.query.from || req.body?.from || req.query.CallFrom || req.body?.CallFrom;
   const callerNumber = (rawFrom !== undefined && rawFrom !== null && String(rawFrom).trim() !== '')
     ? String(rawFrom).replace(/["']/g, '').trim()
     : null;
+
+  // Extract CallSid or session identifier (uses unique per-request session key if CallSid is missing)
+  const callSid = req.query.CallSid || req.body?.CallSid || req.query.CallFrom || req.body?.CallFrom || req.body?.sessionKey || req.query.sessionKey || callerNumber || `ANON_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const sessionKey = String(callSid).trim();
 
   // Lookup existing session before cleanup
   let session = exotelSessions.get(sessionKey);
@@ -773,32 +794,145 @@ export const handleExotelPassthru = async (req, res, broadcastFn = () => {}) => 
   });
 };
 
-// Dynamic Greeting Endpoint Handler for Exotel IVR
-export const handleExotelGreeting = (req, res) => {
+// Dynamic Greeting Endpoint Handler for Exotel IVR (4-Tier Hierarchy: CallSid -> Caller Number RAM -> Exact Booking ID -> Strict Unambiguous DB Fallback)
+export const handleExotelGreeting = async (req, res) => {
   const method = (req.method || 'GET').toUpperCase();
-  const callSid = req.query.CallSid || req.query.callSid || req.query.call_sid || req.query.CallFrom || req.query.sessionKey || req.body?.CallSid || req.body?.callSid || req.body?.sessionKey;
 
+  // Extract CallSid using supported query/body variants
+  const callSid = req.query.CallSid || req.query.callSid || req.query.call_sid || req.body?.CallSid || req.body?.callSid || req.query.sessionKey || req.body?.sessionKey;
   const sessionKey = callSid ? String(callSid).trim() : '';
-  let session = sessionKey ? exotelSessions.get(sessionKey) : null;
 
-  // Missing session or expired session (20 mins timeout)
-  if (session && (Date.now() - session.lastActivity > SESSION_TIMEOUT_MS)) {
-    exotelSessions.delete(sessionKey);
-    session = null;
+  // Robustly extract raw caller number
+  const rawFrom = req.query.From || req.body?.From || req.query.from || req.body?.from || req.query.CallFrom || req.body?.CallFrom;
+  const normalizedCaller = normalizePhoneNumber(rawFrom);
+
+  // Extract optional explicit booking identifier correlation parameter
+  const queryBookingId = req.query.bookingId || req.query.booking_id || req.body?.bookingId || req.body?.booking_id;
+
+  let session = null;
+  let bookingRecord = null;
+  let lookupMethod = 'NONE';
+
+  // --- TIER 1: Exact CallSid / sessionKey Lookup ---
+  if (sessionKey && exotelSessions.has(sessionKey)) {
+    const candidate = exotelSessions.get(sessionKey);
+    if (candidate && (Date.now() - candidate.lastActivity <= SESSION_TIMEOUT_MS)) {
+      session = candidate;
+      lookupMethod = 'CALL_SID';
+    } else if (candidate) {
+      exotelSessions.delete(sessionKey);
+    }
   }
 
-  const sessionFound = Boolean(session);
-  const sessionStage = session ? session.stage : 'NONE';
-  const selectedCrop = session ? session.selectedCrop : null;
+  // --- TIER 2: Exact Active RAM Session Matching Caller Number ---
+  if (!session && normalizedCaller) {
+    for (const [key, candidate] of exotelSessions.entries()) {
+      if (Date.now() - candidate.lastActivity <= SESSION_TIMEOUT_MS) {
+        const candidateCaller = normalizePhoneNumber(candidate.callerNumber);
+        if (candidateCaller && candidateCaller === normalizedCaller) {
+          session = candidate;
+          lookupMethod = 'CALLER_NUMBER';
+          break;
+        }
+      } else {
+        exotelSessions.delete(key);
+      }
+    }
+  }
+
+  // --- TIER 3: Exact Booking / Session Identifier Correlation ---
+  if (!session && queryBookingId) {
+    // Check RAM sessions first for exact bookingId correlation
+    for (const [key, candidate] of exotelSessions.entries()) {
+      if (candidate.bookingId && String(candidate.bookingId) === String(queryBookingId)) {
+        session = candidate;
+        lookupMethod = 'EXACT_BOOKING_ID';
+        break;
+      }
+    }
+    // Check database for exact bookingId correlation
+    if (!session) {
+      try {
+        const allFarmers = await db.getFarmers();
+        for (const farmer of allFarmers) {
+          const farmerBookings = await db.getFarmerBookings(farmer.id);
+          const matched = farmerBookings.find(b => String(b.id) === String(queryBookingId) || String(b.tokenNumber) === String(queryBookingId));
+          if (matched && (matched.bookingStatus || 'ACTIVE') === 'ACTIVE') {
+            bookingRecord = matched;
+            lookupMethod = 'EXACT_BOOKING_ID';
+            break;
+          }
+        }
+        if (!bookingRecord && Array.isArray(db.data?.bookings)) {
+          const localMatch = db.data.bookings.find(b => String(b.id) === String(queryBookingId) || String(b.tokenNumber) === String(queryBookingId));
+          if (localMatch && (localMatch.bookingStatus || 'ACTIVE') === 'ACTIVE') {
+            bookingRecord = localMatch;
+            lookupMethod = 'EXACT_BOOKING_ID';
+          }
+        }
+      } catch (err) {
+        console.warn('⚠️ [EXOTEL DYNAMIC GREETING] Tier 3 exact booking lookup exception:', err.message);
+      }
+    }
+  }
+
+  // --- TIER 4: Strict Database Fallback (Unambiguous Candidate Only) ---
+  if (!session && !bookingRecord && normalizedCaller) {
+    try {
+      const allFarmers = await db.getFarmers();
+      const matchingFarmerIds = new Set(
+        allFarmers.filter(f => normalizePhoneNumber(f.mobile) === normalizedCaller).map(f => String(f.id))
+      );
+
+      const candidateBookings = [];
+      const now = Date.now();
+
+      for (const farmer of allFarmers) {
+        const farmerBookings = await db.getFarmerBookings(farmer.id);
+        for (const b of farmerBookings) {
+          const isVoice = b.source === 'VOICE_IVR';
+          const isActive = (b.bookingStatus || 'ACTIVE') === 'ACTIVE';
+          const createdAtTime = new Date(b.createdAt).getTime();
+          const isRecent = !isNaN(createdAtTime) && (now - createdAtTime <= RECENT_BOOKING_WINDOW_MS);
+
+          if (isVoice && isActive && isRecent) {
+            const matchesPhone = normalizePhoneNumber(b.mobile) === normalizedCaller;
+            const matchesFarmer = matchingFarmerIds.has(String(b.farmerId));
+            if (matchesPhone || matchesFarmer) {
+              if (!candidateBookings.some(cb => String(cb.id) === String(b.id))) {
+                candidateBookings.push(b);
+              }
+            }
+          }
+        }
+      }
+
+      // STRICT UNAMBIGUOUS RULE: Exactly ONE candidate booking must exist!
+      // If multiple recent bookings exist for the same farmer/caller, DO NOT GUESS! Return 404.
+      if (candidateBookings.length === 1) {
+        bookingRecord = candidateBookings[0];
+        lookupMethod = 'DATABASE';
+      } else if (candidateBookings.length > 1) {
+        console.log('⚠️ [EXOTEL DYNAMIC GREETING] Ambiguous candidate bookings for caller:', normalizedCaller, 'Count:', candidateBookings.length, '-> Returning 404 (Will not guess)');
+      }
+    } catch (dbErr) {
+      console.warn('⚠️ [EXOTEL DYNAMIC GREETING] Tier 4 database fallback exception:', dbErr.message);
+    }
+  }
+
+  const sessionFound = Boolean(session || bookingRecord);
+  const sessionStage = session ? session.stage : (bookingRecord ? 'BOOKED' : 'NONE');
+  const selectedCrop = session ? session.selectedCrop : (bookingRecord ? { name: bookingRecord.cropName } : null);
   const mandiOptions = session ? session.mandiOptions : [];
+  const bookingId = session ? session.bookingId : (bookingRecord ? bookingRecord.id : null);
 
   let prompt = '';
   let statusCode = 200;
 
-  if (!session) {
+  if (!sessionFound) {
     statusCode = 404;
     prompt = 'Your session has expired. Please call again.';
-  } else {
+  } else if (session) {
     statusCode = 200;
     if (session.stage === 'AWAITING_MANDI') {
       if (session.selectedCrop && Array.isArray(session.mandiOptions) && session.mandiOptions.length > 0) {
@@ -834,19 +968,31 @@ export const handleExotelGreeting = (req, res) => {
     } else {
       prompt = 'Your session is active. Please continue your request.';
     }
+  } else if (bookingRecord) {
+    statusCode = 200;
+    const mandiStr = bookingRecord.mandiName || 'Mandi';
+    const cropStr = bookingRecord.cropName || 'Crop';
+    const dateStr = bookingRecord.date || 'Date';
+    const timeStr = bookingRecord.timeSlot || 'Time';
+    const qtyStr = (bookingRecord.expectedQty !== null && bookingRecord.expectedQty !== undefined)
+      ? `${bookingRecord.expectedQty} kilograms`
+      : 'Not specified';
+
+    prompt = `Your booking has been confirmed successfully. Your booking ID is ${bookingRecord.id}. Your token number is ${bookingRecord.tokenNumber}. Your mandi is ${mandiStr}. Your crop is ${cropStr}. Your date is ${dateStr}. Your time slot is ${timeStr}. Your expected quantity is ${qtyStr}. Thank you for using KrishiDwaar.`;
   }
 
-  // Detailed Logging Requirement 1 & 4
+  // Diagnostic Logging (Requirements 14-17)
   console.log('====================================================');
   console.log('🗣️ [EXOTEL DYNAMIC GREETING] Incoming Greeting Request');
   console.log('HTTP Method:', method);
-  console.log('CallSid:', callSid || 'NONE');
-  console.log('Session Found:', sessionFound);
-  console.log('Current Session Stage:', sessionStage);
-  console.log('Selected Crop:', selectedCrop ? selectedCrop.name : 'NONE');
-  console.log('Mandi Options:', mandiOptions);
+  console.log('[EXOTEL DYNAMIC GREETING] CallSid:', callSid || 'NONE');
+  console.log('[EXOTEL DYNAMIC GREETING] From:', rawFrom || 'NONE');
+  console.log('[EXOTEL DYNAMIC GREETING] CallFrom:', req.query.CallFrom || req.body?.CallFrom || 'NONE');
+  console.log('[EXOTEL DYNAMIC GREETING] Session lookup method:', lookupMethod);
+  console.log('[EXOTEL DYNAMIC GREETING] Session Found:', sessionFound);
+  console.log('[EXOTEL DYNAMIC GREETING] Booking ID:', bookingId || 'NONE');
   console.log('Generated Prompt:', prompt);
-  console.log('Response Status:', statusCode);
+  console.log('[EXOTEL DYNAMIC GREETING] Response Status:', statusCode);
   console.log('====================================================');
 
   if (typeof res.setHeader === 'function') {
