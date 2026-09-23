@@ -410,6 +410,42 @@ app.post('/api/queue/evaluate-noshows', async (req, res) => {
   }
 });
 
+// Call Next Farmer Endpoint
+app.post('/api/queue/call-next', async (req, res) => {
+  try {
+    const { mandiId, date } = req.body || {};
+    if (!mandiId) {
+      return res.status(400).json({ error: "Mandi ID is required." });
+    }
+    const calledBooking = await db.callNextFarmer(mandiId, date);
+    broadcast('QUEUE_UPDATED', { mandiId, calledBooking, action: 'CALL_NEXT' });
+    res.json({ success: true, booking: calledBooking });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Get Officer Activity Log Endpoint
+app.get('/api/officer/activity-log/:mandiId', async (req, res) => {
+  try {
+    const logs = await db.getOfficerActivityLog(req.params.mandiId);
+    res.json(logs);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Global Search Endpoint
+app.get('/api/search', async (req, res) => {
+  try {
+    const { q } = req.query;
+    const results = await db.searchRecords(q);
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- FARMER NOTIFICATION SYSTEM ROUTES ---
 
 // Get Farmer Notifications & Unread Count (Farmer Authorization Enforced)
@@ -507,6 +543,26 @@ app.get('/api/admin/stats', async (req, res) => {
   res.json(stats);
 });
 
+// Admin System Health Check
+app.get('/api/admin/health', async (req, res) => {
+  try {
+    const health = await db.checkSystemHealth();
+    res.json(health);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin Data Integrity Audit Monitor
+app.get('/api/admin/integrity', async (req, res) => {
+  try {
+    const integrity = await db.checkDataIntegrity();
+    res.json(integrity);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Admin History — all daily reports (optionally filtered by mandi, startDate, endDate)
 app.get('/api/admin/history', async (req, res) => {
   const { mandiId, startDate, endDate } = req.query;
@@ -528,15 +584,38 @@ app.get('/api/bookings/mandi/:mandiId/enriched', async (req, res) => {
 
 // Mandi History for a specific date — full enriched detail
 app.get('/api/history/mandi/:mandiId', async (req, res) => {
-  const mandi = await db.getMandiById(req.params.mandiId);
-  if (!mandi) {
-    return res.status(404).json({ error: `Mandi with ID ${req.params.mandiId} not found.` });
+  try {
+    const mandi = await db.getMandiById(req.params.mandiId);
+    if (!mandi) {
+      return res.status(404).json({ error: `Mandi with ID ${req.params.mandiId} not found.` });
+    }
+    const { date } = req.query;
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    const history = await db.getMandiHistoryForDate(req.params.mandiId, targetDate);
+    res.json(history);
+  } catch (error) {
+    console.error(`Error in /api/history/mandi/${req.params.mandiId}:`, error);
+    res.status(500).json({ error: error.message || 'Failed to fetch mandi history.' });
   }
-  const { date } = req.query;
-  if (!date) return res.status(400).json({ error: 'Date is required' });
-  const history = await db.getMandiHistoryForDate(req.params.mandiId, date);
-  res.json(history);
 });
+
+// Submit / Generate Daily Report
+app.post('/api/reports/daily/submit', async (req, res) => {
+  try {
+    const { mandiId, date } = req.body;
+    if (!mandiId) {
+      return res.status(400).json({ error: 'Mandi ID is required.' });
+    }
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    const report = await db.submitDailyReport(mandiId, targetDate);
+    broadcast('DAILY_REPORT_SUBMITTED', report);
+    res.json({ success: true, report });
+  } catch (error) {
+    console.error('Error submitting daily report:', error);
+    res.status(400).json({ error: error.message || 'Failed to submit daily report.' });
+  }
+});
+
 
 // --- COMPLAINTS & DISPUTE MANAGEMENT ROUTES ---
 

@@ -87,72 +87,97 @@ export const FilterDropdown = ({ selectedValue, onChange, totalCount }) => (
 );
 
 export const DataTable = ({ data }) => (
-  <div style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-    <table style={{
-      width: '100%',
-      borderCollapse: 'collapse',
-      textAlign: 'left',
-      fontSize: '13.5px'
-    }}>
-      <thead>
-        <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-          <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>MANDI &amp; LOCATION</th>
-          <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>BOOKINGS</th>
-          <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>VERIFIED</th>
-          <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>PENDING</th>
-          <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>COMPLETED</th>
-          <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>QTY PROCURED</th>
-          <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>PAYMENT</th>
-          <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>STATUS</th>
-        </tr>
-      </thead>
-      <tbody>
-        {data.map((m, idx) => (
-          <tr
-            key={m.mandiId}
-            style={{
-              borderBottom: idx < data.length - 1 ? '1px solid #F1F5F9' : 'none',
-              backgroundColor: '#FFFFFF',
-              transition: 'background-color 0.15s ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
-          >
-            <td style={{ padding: '14px 18px' }}>
-              <div style={{ fontWeight: 700, color: '#11382B', fontSize: '14px' }}>
-                {m.mandiName}
-              </div>
-              <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                <MapPin size={13} color="#15803D" />
-                <span>{m.location}</span>
-              </div>
-            </td>
-            <td style={{ padding: '14px 18px', fontWeight: 700, color: '#11382B' }}>
-              {m.booked}
-            </td>
-            <td style={{ padding: '14px 18px' }}>
-              <StatusPill type="ARRIVED" />
-            </td>
-            <td style={{ padding: '14px 18px' }}>
-              <StatusPill type="PENDING" />
-            </td>
-            <td style={{ padding: '14px 18px', fontWeight: 700, color: '#11382B' }}>
-              {m.completed} / {m.booked}
-            </td>
-            <td style={{ padding: '14px 18px', fontWeight: 700, color: '#15803D' }}>
-              {m.totalQty} qtl
-            </td>
-            <td style={{ padding: '14px 18px', fontWeight: 700, color: '#11382B' }}>
-              ₹{m.totalPayment.toLocaleString()}
-            </td>
-            <td style={{ padding: '14px 18px' }}>
-              <StatusPill type="ACTIVE" />
-            </td>
+  <>
+    <div className="desktop-table-only" style={{ overflowX: 'auto', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+      <table style={{
+        width: '100%',
+        borderCollapse: 'collapse',
+        textAlign: 'left',
+        fontSize: '13.5px'
+      }}>
+        <thead>
+          <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+            <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>MANDI &amp; LOCATION</th>
+            <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>BOOKINGS</th>
+            <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>VERIFIED</th>
+            <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>PENDING</th>
+            <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>COMPLETED</th>
+            <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>QTY PROCURED</th>
+            <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>PAYMENT</th>
+            <th style={{ padding: '12px 18px', fontSize: '11px', fontWeight: 800, color: '#475569', letterSpacing: '0.05em', textTransform: 'uppercase' }}>STATUS</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
+        </thead>
+        <tbody>
+          {data.map((m, idx) => (
+            <tr
+              key={m.mandiId}
+              style={{
+                borderBottom: idx < data.length - 1 ? '1px solid #F1F5F9' : 'none',
+                backgroundColor: '#FFFFFF',
+                transition: 'background-color 0.15s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
+            >
+              <td style={{ padding: '14px 18px' }}>
+                <div style={{ fontWeight: 700, color: '#11382B', fontSize: '14px' }}>
+                  {m.mandiName}
+                </div>
+                <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                  <MapPin size={13} color="#15803D" />
+                  <span>{m.location}</span>
+                </div>
+              </td>
+              <td style={{ padding: '14px 18px', fontWeight: 700, color: '#11382B' }}>
+                {m.booked}
+              </td>
+              <td style={{ padding: '14px 18px' }}>
+                <StatusPill type="ARRIVED" />
+              </td>
+              <td style={{ padding: '14px 18px' }}>
+                <StatusPill type="PENDING" />
+              </td>
+              <td style={{ padding: '14px 18px', fontWeight: 700, color: '#11382B' }}>
+                {m.completed} / {m.booked}
+              </td>
+              <td style={{ padding: '14px 18px', fontWeight: 700, color: '#15803D' }}>
+                {m.totalQty} qtl
+              </td>
+              <td style={{ padding: '14px 18px', fontWeight: 700, color: '#11382B' }}>
+                ₹{m.totalPayment.toLocaleString()}
+              </td>
+              <td style={{ padding: '14px 18px' }}>
+                <StatusPill type="ACTIVE" />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    {/* Mobile Card List Representation */}
+    <div className="mobile-only-view" style={{ display: 'none', flexDirection: 'column', gap: '12px' }}>
+      {data.map((m) => (
+        <div key={m.mandiId} style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '14px' }}>
+          <div style={{ fontWeight: 800, color: '#11382B', fontSize: '15px' }}>{m.mandiName}</div>
+          <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px', marginBottom: '10px' }}>
+            <MapPin size={13} color="#15803D" />
+            <span>{m.location}</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px', backgroundColor: '#F8FAFC', padding: '10px', borderRadius: '8px' }}>
+            <div>Booked: <strong>{m.booked}</strong></div>
+            <div>Completed: <strong>{m.completed} / {m.booked}</strong></div>
+            <div>Qty: <strong style={{ color: '#15803D' }}>{m.totalQty} qtl</strong></div>
+            <div>Payment: <strong>₹{m.totalPayment.toLocaleString()}</strong></div>
+          </div>
+          <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            <StatusPill type="ARRIVED" />
+            <StatusPill type="ACTIVE" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </>
 );
 
 export const MandiAnalysis = ({ mandiStats }) => {

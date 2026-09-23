@@ -30,7 +30,7 @@ export const LandingPage = ({ onGetStarted }) => {
       </svg>
 
       {/* ── 1. TOP HEADER BAR ── */}
-      <header style={{
+      <header className="landing-header" style={{
         maxWidth: '1540px',
         width: '100%',
         margin: '0 auto',
@@ -61,8 +61,8 @@ export const LandingPage = ({ onGetStarted }) => {
         </div>
 
         {/* Top Right Motto & Quick Access Button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#527063', letterSpacing: '0.01em', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="landing-motto-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div className="landing-motto-text" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#527063', letterSpacing: '0.01em', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span>Empowering Farmers</span>
             <span style={{ color: '#A7F3D0' }}>|</span>
             <span>Strengthening Markets</span>
@@ -99,7 +99,7 @@ export const LandingPage = ({ onGetStarted }) => {
       </header>
 
       {/* ── 2. HERO MAIN CONTENT ── */}
-      <div style={{
+      <div className="landing-hero-grid" style={{
         maxWidth: '1540px',
         width: '100%',
         margin: '0 auto',
@@ -200,7 +200,7 @@ export const LandingPage = ({ onGetStarted }) => {
           </div>
 
           {/* 3 Column Feature Cards */}
-          <div style={{
+          <div className="landing-feature-grid" style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
             gap: '16px',

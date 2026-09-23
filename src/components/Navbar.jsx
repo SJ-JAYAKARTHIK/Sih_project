@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Globe, LogOut, Menu, X, Landmark, Shield, ChevronDown, User, Home } from 'lucide-react';
+import { GlobalSearchModal } from './GlobalSearchModal';
+import { BookingDetailsDrawer } from './BookingDetailsDrawer';
+import { Globe, LogOut, Menu, X, Landmark, Shield, ChevronDown, User, Home, Search } from 'lucide-react';
 
 export const Navbar = ({ onBackToLanding }) => {
   const {
@@ -19,6 +21,9 @@ export const Navbar = ({ onBackToLanding }) => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [selectedSearchBooking, setSelectedSearchBooking] = useState(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const activeUser = activePortal === 'farmer' ? farmerUser
     : activePortal === 'mandi' ? mandiUser
@@ -224,6 +229,31 @@ export const Navbar = ({ onBackToLanding }) => {
 
         {/* ── RIGHT CONTROLS ── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
+
+          {/* Universal Search Button */}
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              padding: '7px 14px',
+              borderRadius: '10px',
+              border: '1px solid rgba(255, 255, 255, 0.22)',
+              color: '#FFFFFF',
+              fontWeight: 700,
+              fontSize: '0.86rem',
+              cursor: 'pointer',
+              transition: 'background-color 0.15s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
+            title="Search Token, Farmer ID, Booking ID, Crop, or Mandi"
+          >
+            <Search size={16} color="#FFFFFF" />
+            <span>Search</span>
+          </button>
 
           {/* Language selector pill */}
           <div style={{
@@ -543,6 +573,23 @@ export const Navbar = ({ onBackToLanding }) => {
           </div>
         </div>
       )}
+
+      {/* Global Search Modal */}
+      <GlobalSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onSelectBooking={(b) => {
+          setSelectedSearchBooking(b);
+          setIsDrawerOpen(true);
+        }}
+      />
+
+      {/* Universal Booking Details Drawer */}
+      <BookingDetailsDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        booking={selectedSearchBooking}
+      />
     </header>
   );
 };

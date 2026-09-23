@@ -315,7 +315,7 @@ export const SlotBookingModal = ({ isOpen, onClose, onBookingSuccess }) => {
             </div>
 
             {/* Calendar Grid */}
-            <div style={{
+            <div className="calendar-dates-grid" style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(85px, 1fr))',
               gap: '0.625rem',
@@ -383,7 +383,7 @@ export const SlotBookingModal = ({ isOpen, onClose, onBookingSuccess }) => {
             <h4 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>{t('step4Title')}</h4>
             <p style={{ color: '#6B7280', fontSize: '0.875rem', marginBottom: '1rem' }}>{t('step4Desc')}</p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
+            <div className="time-slots-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
               {timeSlots.map((slot, idx) => (
                 <button
                   key={idx}

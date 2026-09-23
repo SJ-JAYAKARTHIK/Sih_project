@@ -25,6 +25,7 @@ export const ExcelExporter = ({ mandiId, mandiName, dateStr, className }) => {
         'Farmer Name':                b.farmerName || 'N/A',
         'Mobile Number':              b.mobile || 'N/A',
         'Crop':                       b.cropName || 'N/A',
+        'Booking Source':             (b.source === 'IVR' || b.source === 'VOICE IVR') ? 'VOICE IVR' : 'WEB',
         'Expected Quantity (Quintals)': b.expectedQty != null ? b.expectedQty : 'Not Specified',
         'Actual Quantity (Quintals)': b.actualQty != null ? b.actualQty : 'Pending Weighing',
         'Date':                       b.date || dateStr,

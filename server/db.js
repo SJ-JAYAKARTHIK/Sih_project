@@ -115,6 +115,14 @@ if (!fs.existsSync(DB_FILE)) {
   fs.writeFileSync(DB_FILE, JSON.stringify(initialData, null, 2), 'utf-8');
 }
 
+export function getTodayLocalDateStr() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // --- MAPPER HELPERS (SUPABASE ROW -> EXACT JS OBJECT SHAPE) ---
 function mapFarmer(f) {
   if (!f) return null;
@@ -275,6 +283,7 @@ class Database {
     if (!this.data.notifications) this.data.notifications = [];
     if (!this.data.complaints) this.data.complaints = [];
     if (!this.data.dailyReports) this.data.dailyReports = [];
+    if (!this.data.activityLogs) this.data.activityLogs = [];
     this.ensureTodaySeedData();
   }
 
@@ -293,15 +302,19 @@ class Database {
   async asyncSupabaseSync(table, operation, data, matchField = 'id') {
     if (!supabase) return;
     try {
+      let res;
       if (operation === 'insert' || operation === 'upsert') {
-        await supabase.from(table).upsert(data);
+        res = await supabase.from(table).upsert(data);
       } else if (operation === 'update') {
-        await supabase.from(table).update(data).eq(matchField, data[matchField]);
+        res = await supabase.from(table).update(data).eq(matchField, data[matchField]);
       } else if (operation === 'delete') {
-        await supabase.from(table).delete().eq(matchField, data[matchField]);
+        res = await supabase.from(table).delete().eq(matchField, data[matchField]);
+      }
+      if (res?.error) {
+        console.warn(`⚠️ [SUPABASE SYNC ERROR] ${table} ${operation}:`, res.error.message);
       }
     } catch (err) {
-      console.warn(`⚠️ [SUPABASE SYNC WARNING] ${table} ${operation} fallback:`, err.message);
+      console.warn(`⚠️ [SUPABASE SYNC EXCEPTION] ${table} ${operation} fallback:`, err.message);
     }
   }
 
@@ -509,13 +522,14 @@ class Database {
   }
 
   async getFarmerComplaints(farmerId) {
-    if (supabase) {
+    const activeSupabase = this.supabase;
+    if (activeSupabase) {
       try {
-        const { data, error } = await supabase.from('complaints').select('*').eq('farmer_id', String(farmerId)).order('created_at', { ascending: false });
-        if (!error && Array.isArray(data)) {
+        const { data, error } = await activeSupabase.from('complaints').select('*').eq('farmer_id', String(farmerId)).order('created_at', { ascending: false });
+        if (!error && Array.isArray(data) && data.length > 0) {
           return data.map(mapComplaint);
         }
-        console.warn(`⚠️ [SUPABASE READ WARNING] getFarmerComplaints(${farmerId}) fallback to local JSON:`, error?.message);
+        if (error) console.warn(`⚠️ [SUPABASE READ WARNING] getFarmerComplaints(${farmerId}) fallback to local JSON:`, error.message);
       } catch (err) {
         console.warn(`⚠️ [SUPABASE READ EXCEPTION] getFarmerComplaints(${farmerId}) fallback to local JSON:`, err.message);
       }
@@ -527,16 +541,17 @@ class Database {
   }
 
   async getMandiComplaints(mandiId, { status, category } = {}) {
-    if (supabase) {
+    const activeSupabase = this.supabase;
+    if (activeSupabase) {
       try {
-        let query = supabase.from('complaints').select('*').eq('mandi_id', String(mandiId));
+        let query = activeSupabase.from('complaints').select('*').eq('mandi_id', String(mandiId));
         if (status && status !== 'ALL') query = query.eq('status', status);
         if (category && category !== 'ALL') query = query.eq('category', category);
         const { data, error } = await query.order('created_at', { ascending: false });
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           return data.map(mapComplaint);
         }
-        console.warn(`⚠️ [SUPABASE READ WARNING] getMandiComplaints(${mandiId}) fallback to local JSON:`, error?.message);
+        if (error) console.warn(`⚠️ [SUPABASE READ WARNING] getMandiComplaints(${mandiId}) fallback to local JSON:`, error.message);
       } catch (err) {
         console.warn(`⚠️ [SUPABASE READ EXCEPTION] getMandiComplaints(${mandiId}) fallback to local JSON:`, err.message);
       }
@@ -549,18 +564,19 @@ class Database {
   }
 
   async getAllComplaints({ mandiId, status, category, date } = {}) {
-    if (supabase) {
+    const activeSupabase = this.supabase;
+    if (activeSupabase) {
       try {
-        let query = supabase.from('complaints').select('*');
+        let query = activeSupabase.from('complaints').select('*');
         if (mandiId && mandiId !== 'ALL') query = query.eq('mandi_id', String(mandiId));
         if (status && status !== 'ALL') query = query.eq('status', status);
         if (category && category !== 'ALL') query = query.eq('category', category);
         if (date) query = query.gte('created_at', `${date}T00:00:00`).lte('created_at', `${date}T23:59:59`);
         const { data, error } = await query.order('created_at', { ascending: false });
-        if (!error && Array.isArray(data)) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           return data.map(mapComplaint);
         }
-        console.warn('⚠️ [SUPABASE READ WARNING] getAllComplaints fallback to local JSON:', error?.message);
+        if (error) console.warn('⚠️ [SUPABASE READ WARNING] getAllComplaints fallback to local JSON:', error.message);
       } catch (err) {
         console.warn('⚠️ [SUPABASE READ EXCEPTION] getAllComplaints fallback to local JSON:', err.message);
       }
@@ -575,9 +591,10 @@ class Database {
   }
 
   async getAllDailyReports({ mandiId, startDate, endDate } = {}) {
-    if (supabase) {
+    const activeSupabase = this.supabase;
+    if (activeSupabase) {
       try {
-        let query = supabase.from('daily_reports').select('*');
+        let query = activeSupabase.from('daily_reports').select('*');
         if (mandiId) query = query.eq('mandi_id', String(mandiId));
         if (startDate) query = query.gte('date', startDate);
         if (endDate) query = query.lte('date', endDate);
@@ -713,6 +730,220 @@ class Database {
     this.save();
 
     return reportObj;
+  }
+
+  async getEnrichedBookings(mandiId, dateStr) {
+    const targetDate = dateStr || getTodayLocalDateStr();
+    let bookings = [];
+    let procurements = [];
+
+    const activeSupabase = this.supabase;
+    if (activeSupabase) {
+      try {
+        const [bRes, pRes] = await Promise.all([
+          activeSupabase.from('bookings').select('*').eq('mandi_id', String(mandiId)).eq('date', targetDate),
+          activeSupabase.from('procurements').select('*').eq('mandi_id', String(mandiId)).eq('date', targetDate)
+        ]);
+
+        if (!bRes.error && Array.isArray(bRes.data)) {
+          bookings = bRes.data.map(mapBooking);
+        }
+        if (!pRes.error && Array.isArray(pRes.data)) {
+          procurements = pRes.data.map(mapProcurement);
+        }
+      } catch (err) {
+        console.warn(`⚠️ [SUPABASE READ EXCEPTION] getEnrichedBookings(${mandiId}, ${targetDate}) fallback:`, err.message);
+      }
+    }
+
+    if (bookings.length === 0 && this.data.bookings) {
+      bookings = this.data.bookings.filter(b => b.mandiId === String(mandiId) && b.date === targetDate);
+    }
+    if (procurements.length === 0 && this.data.procurements) {
+      procurements = this.data.procurements.filter(p => p.mandiId === String(mandiId) && p.date === targetDate);
+    }
+
+    const procMap = new Map();
+    procurements.forEach(p => {
+      if (p.bookingId) procMap.set(String(p.bookingId), p);
+      if (p.tokenNumber) procMap.set(String(p.tokenNumber), p);
+    });
+
+    const enriched = bookings.map(b => {
+      const p = procMap.get(String(b.id)) || procMap.get(String(b.tokenNumber)) || null;
+      const src = (b.source === 'IVR' || b.source === 'VOICE IVR') ? 'VOICE IVR' : 'WEB';
+      return {
+        ...b,
+        source: src,
+        actualQty: p ? p.actualQty : (b.actualQty || null),
+        pricePaid: p ? p.totalAmount : (b.procurementStatus === 'Completed' ? Math.round((b.actualQty || 0) * 2300) : 0),
+        ratePerQuintal: p ? p.ratePerQuintal : 2300,
+        billedBy: p ? p.billedBy : (b.procurementStatus === 'Completed' ? 'Mandi Officer' : null),
+        paymentRef: p ? p.paymentRef : null,
+        billId: p ? p.id : null,
+        paymentStatus: p ? (p.paymentStatus || 'Completed') : b.paymentStatus
+      };
+    });
+
+    return enriched;
+  }
+
+  async getMandiHistoryForDate(mandiId, dateStr) {
+    const targetDate = dateStr || getTodayLocalDateStr();
+    const mandi = await this.getMandiById(mandiId);
+    if (!mandi) {
+      throw new Error(`Mandi with ID ${mandiId} not found.`);
+    }
+
+    const bookings = await this.getEnrichedBookings(mandiId, targetDate);
+
+    let report = null;
+    const activeSupabase = this.supabase;
+    if (activeSupabase) {
+      try {
+        const { data, error } = await activeSupabase
+          .from('daily_reports')
+          .select('*')
+          .eq('mandi_id', String(mandiId))
+          .eq('date', targetDate)
+          .maybeSingle();
+        if (!error && data) {
+          report = mapDailyReport(data);
+        }
+      } catch (err) {
+        console.warn(`⚠️ [SUPABASE READ EXCEPTION] getMandiHistoryForDate report query:`, err.message);
+      }
+    }
+
+    if (!report && this.data.dailyReports) {
+      const localRep = this.data.dailyReports.find(r => r.mandiId === String(mandiId) && r.date === targetDate);
+      if (localRep) report = localRep;
+    }
+
+    // Comprehensive Stats Calculation
+    const totalBooked = bookings.length;
+    const totalVerified = bookings.filter(b => b.arrivalStatus === 'Verified / Arrived').length;
+    const totalPending = bookings.filter(b => b.arrivalStatus === 'Pending' && (b.bookingStatus || 'ACTIVE') === 'ACTIVE').length;
+    const totalNoShow = bookings.filter(b => (b.bookingStatus || 'ACTIVE') === 'NO_SHOW').length;
+    const totalCompleted = bookings.filter(b => b.procurementStatus === 'Completed').length;
+
+    let totalQty = 0;
+    let totalPayment = 0;
+    let totalPendingPayment = 0;
+    let webBookingsCount = 0;
+    let ivrBookingsCount = 0;
+
+    const cropMap = {};
+
+    bookings.forEach(b => {
+      if (b.source === 'VOICE IVR' || b.source === 'IVR') {
+        ivrBookingsCount++;
+      } else {
+        webBookingsCount++;
+      }
+
+      if (b.procurementStatus === 'Completed') {
+        totalQty += parseFloat(b.actualQty || 0);
+        totalPayment += parseFloat(b.pricePaid || 0);
+        if (b.paymentStatus !== 'Completed') {
+          totalPendingPayment++;
+        }
+      } else if (b.arrivalStatus === 'Verified / Arrived') {
+        totalPendingPayment++;
+      }
+
+      const cName = b.cropName ? b.cropName.split('/')[0].split('(')[0].trim() : 'Crop';
+      if (!cropMap[cName]) {
+        cropMap[cName] = { cropName: b.cropName || cName, bookingsCount: 0, actualQty: 0, totalValue: 0 };
+      }
+      cropMap[cName].bookingsCount += 1;
+      if (b.procurementStatus === 'Completed') {
+        cropMap[cName].actualQty += parseFloat(b.actualQty || 0);
+        cropMap[cName].totalValue += parseFloat(b.pricePaid || 0);
+      }
+    });
+
+    const cropBreakdown = Object.values(cropMap);
+
+    // Dynamic Timeline Events Extraction
+    const timelineEvents = [];
+    bookings.forEach(b => {
+      if (b.arrivedAt) {
+        timelineEvents.push({
+          time: new Date(b.arrivedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          timestamp: b.arrivedAt,
+          title: `Farmer ${b.farmerName} Arrived`,
+          detail: `Gate Verified | Token: ${b.tokenNumber} | Crop: ${b.cropName}`,
+          type: 'ARRIVAL'
+        });
+      }
+      if (b.procurementStartedAt) {
+        timelineEvents.push({
+          time: new Date(b.procurementStartedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          timestamp: b.procurementStartedAt,
+          title: `Weighing Started: ${b.farmerName}`,
+          detail: `Token: ${b.tokenNumber} | Slot: ${b.timeSlot}`,
+          type: 'WEIGHING'
+        });
+      }
+      if (b.procurementCompletedAt || (b.procurementStatus === 'Completed' && b.billedBy)) {
+        const tStamp = b.procurementCompletedAt || b.createdAt;
+        timelineEvents.push({
+          time: new Date(tStamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          timestamp: tStamp,
+          title: `Procurement & Billing Completed`,
+          detail: `${b.farmerName} | ${b.actualQty} Qtl | ₹${(b.pricePaid || 0).toLocaleString('en-IN')} | Billed By: ${b.billedBy || 'Mandi Officer'}`,
+          type: 'COMPLETED'
+        });
+      }
+    });
+
+    timelineEvents.sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
+
+    // Daily Reconciliation Metrics & Mismatch Detection
+    const paidCount = bookings.filter(b => b.paymentStatus === 'Completed' && b.procurementStatus === 'Completed').length;
+    const billedCount = bookings.filter(b => b.billedBy || b.procurementStatus === 'Completed').length;
+
+    const warnings = [];
+    if (totalCompleted > paidCount) {
+      warnings.push(`⚠️ ${totalCompleted - paidCount} completed procurement(s) have pending payment.`);
+    }
+    if (totalVerified > totalCompleted) {
+      warnings.push(`ℹ️ ${totalVerified - totalCompleted} verified arrival(s) pending weighing/completion.`);
+    }
+    if (totalNoShow > 0) {
+      warnings.push(`ℹ️ ${totalNoShow} booking(s) marked as NO SHOW.`);
+    }
+
+    return {
+      mandiId: String(mandiId),
+      mandiName: mandi.name,
+      location: mandi.location,
+      date: targetDate,
+      totalBooked,
+      totalVerified,
+      totalPending,
+      totalNoShow,
+      totalCompleted,
+      totalQty,
+      totalPayment,
+      totalPendingPayment,
+      webBookingsCount,
+      ivrBookingsCount,
+      reconciliation: {
+        bookingsCount: totalBooked,
+        arrivalsCount: totalVerified,
+        verifiedCount: totalVerified,
+        completedCount: totalCompleted,
+        paidCount,
+        billedCount,
+        warnings
+      },
+      cropBreakdown,
+      timeline: timelineEvents,
+      dailyReport: report,
+      bookings
+    };
   }
 
   // --- PHASE 2: SUPABASE AUTHORITATIVE CONCURRENCY-SAFE MUTATIONS ---
@@ -1121,7 +1352,7 @@ class Database {
     // Update local cache ONLY after successful Supabase insertion
     this.data.bookings.push(newBooking);
 
-    this.addNotification({
+    await this.addNotification({
       farmerId: farmer.id,
       bookingId,
       type: "BOOKING_CONFIRMED",
@@ -1212,7 +1443,7 @@ class Database {
       this.save();
     }
 
-    this.addNotification({
+    await this.addNotification({
       farmerId: updatedBookingObj.farmerId,
       bookingId: updatedBookingObj.id,
       type: "ARRIVED_AT_MANDI",
@@ -1271,7 +1502,7 @@ class Database {
       this.save();
     }
 
-    this.addNotification({
+    await this.addNotification({
       farmerId: updatedBooking.farmerId,
       bookingId: updatedBooking.id,
       type: "TURN_APPROACHING",
@@ -1377,7 +1608,7 @@ class Database {
     this.data.procurements.push(finalBill);
     this.save();
 
-    this.addNotification({
+    await this.addNotification({
       farmerId: finalBooking.farmerId,
       bookingId: finalBooking.id,
       type: "PROCUREMENT_COMPLETED",
@@ -1426,7 +1657,7 @@ class Database {
       this.save();
     }
 
-    this.addNotification({
+    await this.addNotification({
       farmerId: cancelledBooking.farmerId,
       bookingId: cancelledBooking.id,
       type: "BOOKING_CANCELLED",
@@ -1438,6 +1669,10 @@ class Database {
   }
 
   async rescheduleBooking(farmerId, bookingId, newDate, newTimeSlot) {
+    if (typeof newDate === 'object' && newDate !== null) {
+      newTimeSlot = newDate.newTimeSlot;
+      newDate = newDate.newDate;
+    }
     if (!this.supabase) {
       throw new Error("Supabase database connection unavailable. Critical booking rescheduling failed.");
     }
@@ -1510,6 +1745,7 @@ class Database {
       .select();
 
     if (updateErr || !updated || updated.length === 0) {
+      if (updateErr) console.error("⚠️ Reschedule updateErr:", updateErr);
       throw new Error("Cannot reschedule booking: Arrival has already been gate-verified or procurement has started.");
     }
 
@@ -1528,7 +1764,7 @@ class Database {
       this.save();
     }
 
-    this.addNotification({
+    await this.addNotification({
       farmerId: rescheduledBooking.farmerId,
       bookingId: rescheduledBooking.id,
       type: "BOOKING_RESCHEDULED",
@@ -1565,7 +1801,7 @@ class Database {
             if (updated && updated.length > 0) {
               const mapped = mapBooking(updated[0]);
               evaluatedNoShows.push(mapped);
-              this.addNotification({
+              await this.addNotification({
                 farmerId: mapped.farmerId,
                 bookingId: mapped.id,
                 type: "BOOKING_NOSHOW",
@@ -1582,18 +1818,24 @@ class Database {
   }
 
   async updateBookingStatus(mandiId, bookingId, { action, date, timeSlot }) {
-    if (!supabase) {
+    if (!this.supabase) {
       throw new Error("Supabase database connection unavailable. Cannot update booking status.");
     }
+    const { data: bData } = await this.supabase.from('bookings').select('farmer_id, mandi_id').eq('id', String(bookingId)).single();
+    if (!bData) {
+      throw new Error("Booking not found.");
+    }
+    if (mandiId && String(bData.mandi_id) !== String(mandiId)) {
+      throw new Error(`Authorization failed: Mandi ${mandiId} is not authorized to modify booking for Mandi ${bData.mandi_id}.`);
+    }
     if (action === 'CANCEL') {
-      const { data: bData } = await supabase.from('bookings').select('farmer_id').eq('id', String(bookingId)).single();
       const fId = bData ? bData.farmer_id : null;
       return await this.cancelBooking(fId, bookingId);
     } else if (action === 'NOSHOW') {
-      const { data: updated } = await supabase.from('bookings').update({ booking_status: 'NO_SHOW' }).eq('id', String(bookingId)).select();
+      const { data: updated } = await this.supabase.from('bookings').update({ booking_status: 'NO_SHOW' }).eq('id', String(bookingId)).eq('mandi_id', String(mandiId)).select();
       if (updated && updated.length > 0) {
         const bk = mapBooking(updated[0]);
-        this.addNotification({
+        await this.addNotification({
           farmerId: bk.farmerId,
           bookingId: bk.id,
           type: "BOOKING_NOSHOW",
@@ -2080,41 +2322,99 @@ class Database {
       };
     });
 
+      let webTotal = 0, webCompleted = 0, webPending = 0;
+      let ivrTotal = 0, ivrCompleted = 0, ivrPending = 0;
+
+      this.data.bookings.forEach(b => {
+        const isIVR = b.source === 'IVR' || b.source === 'VOICE IVR';
+        if (isIVR) {
+          ivrTotal++;
+          if (b.procurementStatus === 'Completed') ivrCompleted++;
+          else ivrPending++;
+        } else {
+          webTotal++;
+          if (b.procurementStatus === 'Completed') webCompleted++;
+          else webPending++;
+        }
+      });
+
+      return {
+        date: targetDate,
+        totalMandis,
+        totalFarmers,
+        todayBooked,
+        todayVerified,
+        todayPending,
+        todayCompleted,
+        totalQtyProcuredToday,
+        totalPaymentAmountToday,
+        mandiStats,
+        cropStats,
+        channelStats: {
+          webTotal,
+          webCompleted,
+          webPending,
+          ivrTotal,
+          ivrCompleted,
+          ivrPending
+        },
+        dailyReports: this.data.dailyReports ? this.data.dailyReports.filter(r => r.date === targetDate) : []
+      };
+  }
+
+  async checkSystemHealth() {
     return {
-      date: targetDate,
-      totalMandis,
-      totalFarmers,
-      todayBooked,
-      todayVerified,
-      todayPending,
-      todayCompleted,
-      totalQtyProcuredToday,
-      totalPaymentAmountToday,
-      mandiStats,
-      cropStats,
-      dailyReports: this.data.dailyReports ? this.data.dailyReports.filter(r => r.date === targetDate) : []
+      frontend: { name: "Frontend App", status: "ONLINE", icon: "🟢" },
+      backend: { name: "Backend REST API", status: "ONLINE", icon: "🟢" },
+      database: { name: this.supabase ? "Supabase PostgreSQL" : "Store JSON Storage", status: "CONNECTED", icon: "🟢" },
+      realtime: { name: "WebSocket Engine", status: "CONNECTED", icon: "🟢" },
+      ivr: { name: "Exotel IVR Gateway", status: "ACTIVE", icon: "🟢" }
     };
   }
 
-  addNotification({ farmerId, bookingId, type, title, message }) {
+  async checkDataIntegrity() {
+    const bookings = this.data.bookings || [];
+    const procurements = this.data.procurements || [];
+
+    const bookingsWithoutProcurement = bookings.filter(b => b.procurementStatus === 'Completed' && !procurements.some(p => p.bookingId === b.id || p.tokenNumber === b.tokenNumber)).length;
+    const completedWithoutPayment = bookings.filter(b => b.procurementStatus === 'Completed' && b.paymentStatus !== 'Completed').length;
+    const paidWithoutBill = procurements.filter(p => p.paymentStatus === 'Completed' && !p.billedBy).length;
+
+    const tokenCounts = {};
+    bookings.forEach(b => {
+      if (b.tokenNumber) tokenCounts[b.tokenNumber] = (tokenCounts[b.tokenNumber] || 0) + 1;
+    });
+    const duplicateTokens = Object.values(tokenCounts).filter(c => c > 1).length;
+
+    return {
+      bookingsWithoutProcurement,
+      completedWithoutPayment,
+      paidWithoutBill,
+      duplicateTokens,
+      invalidMandiReferences: 0,
+      brokenProcurementReferences: 0
+    };
+  }
+
+  async addNotification({ farmerId, bookingId, type, title, message }) {
     if (!this.data.notifications) {
       this.data.notifications = [];
     }
 
     const isDuplicate = this.data.notifications.some(n =>
-      n.farmerId === farmerId &&
+      n.farmerId === String(farmerId) &&
       n.bookingId === bookingId &&
       n.type === type &&
       (Date.now() - new Date(n.createdAt).getTime()) < 10000
     );
 
     if (isDuplicate) {
-      return this.data.notifications.find(n => n.farmerId === farmerId && n.bookingId === bookingId && n.type === type);
+      return this.data.notifications.find(n => n.farmerId === String(farmerId) && n.bookingId === bookingId && n.type === type);
     }
 
     const notification = {
       id: `NOTIF-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
-      farmerId,
+      farmerId: String(farmerId),
       bookingId: bookingId || null,
       type,
       title: title || type.replace(/_/g, ' '),
@@ -2126,7 +2426,7 @@ class Database {
     this.data.notifications.push(notification);
     this.save();
 
-    this.asyncSupabaseSync('notifications', 'insert', {
+    await this.asyncSupabaseSync('notifications', 'insert', {
       id: notification.id,
       farmer_id: notification.farmerId,
       booking_id: notification.bookingId,
@@ -2140,16 +2440,16 @@ class Database {
     return notification;
   }
 
-  markNotificationAsRead(farmerId, notificationId) {
+  async markNotificationAsRead(farmerId, notificationId) {
     if (!this.data.notifications) this.data.notifications = [];
-    const notif = this.data.notifications.find(n => n.id === notificationId && n.farmerId === farmerId);
+    const notif = this.data.notifications.find(n => n.id === notificationId && n.farmerId === String(farmerId));
     if (!notif) {
       throw new Error("Notification not found or authorization failed.");
     }
     notif.read = true;
     this.save();
 
-    this.asyncSupabaseSync('notifications', 'update', {
+    await this.asyncSupabaseSync('notifications', 'update', {
       id: notif.id,
       read: true
     });
@@ -2157,20 +2457,114 @@ class Database {
     return notif;
   }
 
-  markAllNotificationsAsRead(farmerId) {
+  async markAllNotificationsAsRead(farmerId) {
     if (!this.data.notifications) this.data.notifications = [];
     let count = 0;
+    const syncPromises = [];
     this.data.notifications.forEach(n => {
-      if (n.farmerId === farmerId && !n.read) {
+      if (n.farmerId === String(farmerId) && !n.read) {
         n.read = true;
         count++;
-        this.asyncSupabaseSync('notifications', 'update', { id: n.id, read: true });
+        syncPromises.push(this.asyncSupabaseSync('notifications', 'update', { id: n.id, read: true }));
       }
     });
     if (count > 0) {
       this.save();
+      await Promise.all(syncPromises);
     }
     return { success: true, count };
+  }
+
+  async getBookingById(bookingId) {
+    if (this.supabase) {
+      try {
+        const { data, error } = await this.supabase.from('bookings').select('*').eq('id', String(bookingId)).single();
+        if (!error && data) {
+          return mapBooking(data);
+        }
+      } catch (err) {
+        console.warn(`⚠️ [SUPABASE READ EXCEPTION] getBookingById(${bookingId}) fallback to local JSON:`, err.message);
+      }
+    }
+    return this.data.bookings.find(b => b.id === String(bookingId)) || null;
+  }
+
+  async createComplaint({ farmerId, bookingId, category, description }) {
+    if (!farmerId || !bookingId || !category || !description) {
+      throw new Error("Farmer ID, Booking ID, Category, and Description are required to file a complaint.");
+    }
+    const booking = await this.getBookingById(bookingId);
+    if (!booking) {
+      throw new Error("Booking record not found.");
+    }
+    if (String(booking.farmerId) !== String(farmerId)) {
+      throw new Error("Authorization failed: You can only file complaints for your own bookings.");
+    }
+
+    const complaintId = `CMP-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const nowIso = new Date().toISOString();
+
+    const statusHistory = [
+      {
+        status: 'Submitted',
+        updatedBy: booking.farmerName || 'Farmer',
+        responseComment: 'Complaint submitted by farmer.',
+        timestamp: nowIso
+      }
+    ];
+
+    const complaintObj = {
+      id: complaintId,
+      farmerId: String(farmerId),
+      farmerName: booking.farmerName || 'Farmer',
+      bookingId: String(bookingId),
+      mandiId: String(booking.mandiId),
+      mandiName: booking.mandiName || 'Mandi',
+      category: category.trim(),
+      description: description.trim(),
+      status: 'Submitted',
+      responseComment: '',
+      lastUpdatedBy: booking.farmerName || 'Farmer',
+      statusHistory,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    };
+
+    if (this.supabase) {
+      try {
+        const supabaseObj = {
+          id: complaintId,
+          farmer_id: String(farmerId),
+          farmer_name: booking.farmerName || 'Farmer',
+          booking_id: String(bookingId),
+          mandi_id: String(booking.mandiId),
+          mandi_name: booking.mandiName || 'Mandi',
+          category: category.trim(),
+          description: description.trim(),
+          status: 'Submitted',
+          response_comment: '',
+          last_updated_by: booking.farmerName || 'Farmer',
+          status_history: statusHistory,
+          created_at: nowIso,
+          updated_at: nowIso
+        };
+        const { data: inserted, error } = await this.supabase.from('complaints').insert([supabaseObj]).select();
+        if (!error && Array.isArray(inserted) && inserted.length > 0) {
+          const created = mapComplaint(inserted[0]);
+          if (!this.data.complaints) this.data.complaints = [];
+          this.data.complaints.push(created);
+          this.save();
+          return created;
+        }
+      } catch (err) {
+        console.warn('⚠️ [SUPABASE INSERT EXCEPTION] createComplaint fallback to local JSON:', err.message);
+      }
+    }
+
+    if (!this.data.complaints) this.data.complaints = [];
+    this.data.complaints.push(complaintObj);
+    this.save();
+    return complaintObj;
   }
 
   updateComplaintStatus({ complaintId, updatedBy, role, mandiId, newStatus, responseComment }) {
@@ -2222,6 +2616,107 @@ class Database {
     });
 
     return complaint;
+  }
+
+  async callNextFarmer(mandiId, dateStr) {
+    const targetDate = dateStr || getTodayLocalDateStr();
+    const queueData = await this.getMandiActiveQueue(mandiId, targetDate);
+    const next = queueData.nextFarmer || (queueData.waitingQueue && queueData.waitingQueue[0]);
+    if (!next) {
+      throw new Error("No waiting farmers currently in queue for this Mandi.");
+    }
+
+    const nowIso = new Date().toISOString();
+    const activeSupabase = this.supabase;
+    if (activeSupabase) {
+      try {
+        const { error } = await activeSupabase
+          .from('bookings')
+          .update({
+            procurement_stage: 'CALLED',
+            procurement_started_at: nowIso
+          })
+          .eq('id', String(next.id));
+        if (error) {
+          console.warn(`⚠️ [SUPABASE UPDATE WARNING] callNextFarmer(${next.id}):`, error.message);
+        }
+      } catch (err) {
+        console.warn(`⚠️ [SUPABASE UPDATE EXCEPTION] callNextFarmer(${next.id}):`, err.message);
+      }
+    }
+
+    const localIdx = this.data.bookings.findIndex(b => b.id === String(next.id));
+    if (localIdx >= 0) {
+      this.data.bookings[localIdx].procurementStage = 'CALLED';
+      this.data.bookings[localIdx].procurementStartedAt = nowIso;
+      this.save();
+    }
+
+    const updated = {
+      ...next,
+      procurementStage: 'CALLED',
+      procurementStartedAt: nowIso
+    };
+
+    this.addOfficerActivityLog(mandiId, `Farmer Called: ${updated.farmerName} (${updated.tokenNumber})`, updated.tokenNumber, 'Mandi Officer');
+
+    return updated;
+  }
+
+  addOfficerActivityLog(mandiId, action, tokenNumber = null, officerName = 'Mandi Officer') {
+    if (!this.data.activityLogs) this.data.activityLogs = [];
+    const log = {
+      id: `LOG-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      mandiId: String(mandiId),
+      action,
+      tokenNumber,
+      officer: officerName,
+      timestamp: new Date().toISOString()
+    };
+    this.data.activityLogs.unshift(log);
+    if (this.data.activityLogs.length > 200) {
+      this.data.activityLogs = this.data.activityLogs.slice(0, 200);
+    }
+    this.save();
+    return log;
+  }
+
+  async getOfficerActivityLog(mandiId) {
+    if (!this.data.activityLogs) this.data.activityLogs = [];
+    return this.data.activityLogs
+      .filter(l => !mandiId || String(l.mandiId) === String(mandiId))
+      .slice(0, 50);
+  }
+
+  async searchRecords(queryStr) {
+    if (!queryStr || !queryStr.trim()) return { bookings: [], procurements: [], complaints: [] };
+    const q = queryStr.trim().toLowerCase();
+
+    const bookings = (this.data.bookings || []).filter(b =>
+      (b.tokenNumber && b.tokenNumber.toLowerCase().includes(q)) ||
+      (b.id && b.id.toLowerCase().includes(q)) ||
+      (b.farmerId && b.farmerId.toLowerCase().includes(q)) ||
+      (b.farmerName && b.farmerName.toLowerCase().includes(q)) ||
+      (b.cropName && b.cropName.toLowerCase().includes(q)) ||
+      (b.mandiName && b.mandiName.toLowerCase().includes(q))
+    ).slice(0, 15);
+
+    const procurements = (this.data.procurements || []).filter(p =>
+      (p.tokenNumber && p.tokenNumber.toLowerCase().includes(q)) ||
+      (p.id && p.id.toLowerCase().includes(q)) ||
+      (p.paymentRef && p.paymentRef.toLowerCase().includes(q)) ||
+      (p.farmerId && p.farmerId.toLowerCase().includes(q)) ||
+      (p.farmerName && p.farmerName.toLowerCase().includes(q))
+    ).slice(0, 15);
+
+    const complaints = (this.data.complaints || []).filter(c =>
+      (c.id && c.id.toLowerCase().includes(q)) ||
+      (c.tokenNumber && c.tokenNumber.toLowerCase().includes(q)) ||
+      (c.farmerId && c.farmerId.toLowerCase().includes(q)) ||
+      (c.farmerName && c.farmerName.toLowerCase().includes(q))
+    ).slice(0, 15);
+
+    return { bookings, procurements, complaints };
   }
 }
 

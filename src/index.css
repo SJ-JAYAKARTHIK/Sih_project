@@ -2098,50 +2098,95 @@ html, body {
   }
 }
 
-/* ── 4. TABLET BREAKPOINTS (769px - 1024px) ── */
-@media (max-width: 1024px) {
+/* ── 4. TABLET & MOBILE BREAKPOINTS (< 900px) ── */
+@media (max-width: 899px) {
+  /* Prevent horizontal scrolling & set mobile page margins */
+  html, body, .app-container {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  body {
+    padding-bottom: 65px; /* Account for fixed mobile bottom nav */
+  }
+
   .portal-page-container,
   .mandi-portal-wrapper,
   .admin-portal-wrapper {
-    padding: 16px 20px 32px !important;
+    padding: 14px 14px 28px !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
+  /* Universal Single Column Layouts on Mobile */
   .mandi-stats-row,
   .admin-kpi-grid,
   .farmer-stats-grid,
-  .mandi-perf-cards-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 14px !important;
-  }
-
-  .mandi-main-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .admin-main-grid {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-/* ── 5. MOBILE BREAKPOINTS (320px - 768px) ── */
-@media (max-width: 768px) {
-  /* Padding adjustment for compact phone screens */
-  .portal-page-container,
-  .mandi-portal-wrapper,
-  .admin-portal-wrapper {
-    padding: 12px 12px 24px !important;
-  }
-
-  /* Single-column card stacking */
-  .mandi-stats-row,
-  .admin-kpi-grid,
-  .farmer-stats-grid,
-  .mandi-perf-cards-grid {
+  .mandi-perf-cards-grid,
+  .kpi-grid-4,
+  .kpi-grid-auto {
     grid-template-columns: 1fr !important;
     gap: 12px !important;
   }
 
-  /* Top headers & banners flex stacking */
+  .mandi-main-grid,
+  .admin-main-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Landing Page Mobile Adjustments */
+  .landing-header {
+    padding: 16px 16px !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    align-items: flex-start !important;
+  }
+
+  .landing-motto-text {
+    display: none !important;
+  }
+
+  .landing-motto-wrapper {
+    width: 100% !important;
+    justify-content: flex-end !important;
+  }
+
+  .landing-hero-grid {
+    grid-template-columns: 1fr !important;
+    padding: 10px 16px 20px 16px !important;
+    gap: 24px !important;
+  }
+
+  .landing-hero-grid h1 {
+    font-size: 2rem !important;
+  }
+
+  .landing-feature-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Slot Booking Modal Grids */
+  .time-slots-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .calendar-dates-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  /* Booking Card layout conversion from 4-col desktop to 1-col mobile */
+  .booking-card-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .booking-card-divider {
+    display: none !important;
+  }
+
+  /* Header & Banner Responsive Stacking */
   .mandi-top-nav-card,
   .admin-top-banner {
     flex-direction: column !important;
@@ -2156,53 +2201,60 @@ html, body {
     flex-wrap: wrap !important;
   }
 
-  /* Action buttons take full touch width on mobile */
-  .mandi-header-controls .btn,
-  .admin-header-controls .btn {
-    flex: 1;
-    min-width: 130px;
-    justify-content: center;
-  }
-
   /* Universal Modal Mobile Responsiveness */
   .modal-overlay {
-    padding: 10px !important;
+    padding: 12px !important;
     align-items: center !important;
   }
 
   .modal-content {
-    width: 96vw !important;
-    max-width: 100% !important;
+    width: calc(100% - 24px) !important;
+    max-width: 500px !important;
     max-height: 88vh !important;
     padding: 1.25rem 1rem !important;
     border-radius: 14px !important;
     overflow-y: auto !important;
   }
 
-  /* Grid forms stack vertically */
-  .form-row-2col,
-  .grid-2col-mobile {
-    grid-template-columns: 1fr !important;
-    gap: 10px !important;
+  /* Touch-friendly inputs and buttons */
+  button, 
+  .btn, 
+  input[type="text"], 
+  input[type="password"], 
+  input[type="number"], 
+  input[type="date"], 
+  select, 
+  textarea {
+    min-height: 44px;
+  }
+
+  /* Hide desktop-only components on mobile */
+  .desktop-only-view {
+    display: none !important;
+  }
+
+  .mobile-only-view {
+    display: flex !important;
   }
 }
 
-/* ── 6. ULTRA-COMPACT MOBILE BREAKPOINTS (320px - 480px) ── */
+/* ── 5. ULTRA-COMPACT MOBILE BREAKPOINTS (< 480px) ── */
 @media (max-width: 480px) {
   .portal-page-container,
   .mandi-portal-wrapper,
   .admin-portal-wrapper {
-    padding: 10px 8px 20px !important;
+    padding: 10px 10px 24px !important;
   }
 
-  h1 { font-size: 1.35rem !important; }
+  h1 { font-size: 1.4rem !important; }
   h2 { font-size: 1.2rem !important; }
   h3 { font-size: 1.05rem !important; }
 
-  /* Compact tabs scrollable on small screens */
+  /* Compact scrollable tabs on small screens */
   .mandi-tab-bar,
   .admin-tab-bar,
-  .dashboard-tabs {
+  .dashboard-tabs,
+  .secondary-nav-tabs {
     display: flex !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
@@ -2217,3 +2269,54 @@ html, body {
     font-size: 0.85rem !important;
   }
 }
+
+/* ── 6. MOBILE BOTTOM NAVIGATION BAR ── */
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 899px) {
+  .mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background-color: #FFFFFF;
+    border-top: 1px solid #E5E7EB;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 990;
+    padding: 0 6px;
+  }
+
+  .mobile-bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 100%;
+    border: none;
+    background: transparent;
+    color: #6B7280;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    gap: 3px;
+    padding: 4px 0;
+    transition: color 0.15s ease;
+  }
+
+  .mobile-bottom-nav-item.active {
+    color: #11382B;
+    font-weight: 800;
+  }
+
+  .mobile-bottom-nav-item.active svg {
+    color: #11382B;
+    stroke-width: 2.6;
+  }
+}

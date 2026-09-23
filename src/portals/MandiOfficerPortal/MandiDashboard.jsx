@@ -26,6 +26,8 @@ export const MandiDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState('dashboard');
   const [timeFilter, setTimeFilter] = useState('Last 7 Days');
+  const [callingNext, setCallingNext] = useState(false);
+  const [activityLogs, setActivityLogs] = useState([]);
 
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
   const [verifyMethod, setVerifyMethod] = useState('token'); // 'token' | 'qr'
@@ -42,6 +44,7 @@ export const MandiDashboard = () => {
   useEffect(() => {
     if (mandiUser?.id) {
       fetchTodayBookings();
+      fetchActivityLogs();
     }
   }, [mandiUser?.id, refreshTrigger]);
 
@@ -56,6 +59,36 @@ export const MandiDashboard = () => {
       console.error('Error fetching today bookings:', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchActivityLogs = async () => {
+    try {
+      const res = await fetch(`/api/officer/activity-log/${mandiUser.id}`);
+      const data = await res.json();
+      if (Array.isArray(data)) setActivityLogs(data);
+    } catch (e) {
+      console.error('Error fetching activity logs:', e);
+    }
+  };
+
+  const handleCallNext = async () => {
+    setCallingNext(true);
+    try {
+      const res = await fetch('/api/queue/call-next', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mandiId: mandiUser.id, date: todayStr })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'No waiting farmers in queue');
+      triggerRefresh();
+      fetchTodayBookings();
+      fetchActivityLogs();
+    } catch (err) {
+      alert(`Call Next: ${err.message}`);
+    } finally {
+      setCallingNext(false);
     }
   };
 
@@ -519,6 +552,124 @@ export const MandiDashboard = () => {
               </div>
             </div>
 
+            {/* ── ROW 3: LIVE QUEUE CONTROL, CALL NEXT FARMER & CAPACITY MONITOR ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem', marginTop: '1.25rem' }}>
+              
+              {/* Call Next & Now Serving Banner */}
+              <div className="card" style={{ padding: '1.15rem 1.25rem', backgroundColor: '#FFFFFF', border: '1px solid #D1E7DD', borderLeft: '5px solid #059669' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Live Queue Center</span>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0E3524', margin: '2px 0 0 0' }}>NOW SERVING</h3>
+                  </div>
+
+                  <button
+                    onClick={handleCallNext}
+                    disabled={callingNext}
+                    style={{
+                      backgroundColor: '#059669',
+                      color: '#FFFFFF',
+                      fontWeight: 800,
+                      padding: '0.6rem 1.25rem',
+                      borderRadius: '8px',
+                      border: 'none',
+                      cursor: callingNext ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      boxShadow: '0 2px 4px rgba(5,150,105,0.25)',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    <UserCheck size={18} />
+                    <span>{callingNext ? 'Calling...' : 'CALL NEXT FARMER'}</span>
+                  </button>
+                </div>
+
+                {todayBookings.find(b => b.procurementStage === 'CALLED' || b.procurementStage === 'IN_PROGRESS') ? (
+                  <div style={{ backgroundColor: '#ECFDF5', border: '1px solid #A7F3D0', padding: '0.75rem 1rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '1.05rem', color: '#065F46' }}>
+                        Token: {todayBookings.find(b => b.procurementStage === 'CALLED' || b.procurementStage === 'IN_PROGRESS').tokenNumber} · {todayBookings.find(b => b.procurementStage === 'CALLED' || b.procurementStage === 'IN_PROGRESS').farmerName}
+                      </div>
+                      <div style={{ fontSize: '0.82rem', color: '#047857', marginTop: '2px' }}>
+                        Crop: <strong>{todayBookings.find(b => b.procurementStage === 'CALLED' || b.procurementStage === 'IN_PROGRESS').cropName}</strong> | Slot: <strong>{todayBookings.find(b => b.procurementStage === 'CALLED' || b.procurementStage === 'IN_PROGRESS').timeSlot}</strong>
+                      </div>
+                    </div>
+                    <span style={{ backgroundColor: '#059669', color: '#FFFFFF', fontWeight: 800, fontSize: '0.75rem', padding: '4px 10px', borderRadius: '20px' }}>
+                      Stage: CALLED / IN PROGRESS
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{ backgroundColor: '#F9FAFB', border: '1px solid #F3F4F6', padding: '0.75rem 1rem', borderRadius: '8px', fontSize: '0.85rem', color: '#6B7280', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>No farmer is currently called. Click <strong>CALL NEXT FARMER</strong> to serve next in line.</span>
+                    {todayBookings.find(b => b.arrivalStatus === 'Verified / Arrived' && b.procurementStatus !== 'Completed' && b.procurementStage !== 'CALLED' && b.procurementStage !== 'IN_PROGRESS') && (
+                      <span style={{ fontSize: '0.78rem', color: '#D97706', fontWeight: 700 }}>
+                        Next: {todayBookings.find(b => b.arrivalStatus === 'Verified / Arrived' && b.procurementStatus !== 'Completed' && b.procurementStage !== 'CALLED' && b.procurementStage !== 'IN_PROGRESS').tokenNumber} ({todayBookings.find(b => b.arrivalStatus === 'Verified / Arrived' && b.procurementStatus !== 'Completed' && b.procurementStage !== 'CALLED' && b.procurementStage !== 'IN_PROGRESS').farmerName})
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Today's Mandi Capacity Monitor */}
+              <div className="card" style={{ padding: '1.15rem 1.25rem', backgroundColor: '#FFFFFF' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0E3524', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <BarChart2 size={18} color="#D97706" />
+                    <span>TODAY'S CAPACITY</span>
+                  </div>
+                  <div style={{ fontWeight: 800, fontSize: '1rem', color: (todayBookings.length / 60) > 0.9 ? '#DC2626' : (todayBookings.length / 60) > 0.7 ? '#D97706' : '#166534' }}>
+                    {todayBookings.length} / 60 ({Math.min(100, Math.round((todayBookings.length / 60) * 100))}%)
+                  </div>
+                </div>
+
+                <div style={{ width: '100%', height: '10px', backgroundColor: '#E5E7EB', borderRadius: '6px', overflow: 'hidden', marginBottom: '0.6rem' }}>
+                  <div
+                    style={{
+                      width: `${Math.min(100, Math.round((todayBookings.length / 60) * 100))}%`,
+                      height: '100%',
+                      backgroundColor: (todayBookings.length / 60) > 0.9 ? '#DC2626' : (todayBookings.length / 60) > 0.7 ? '#D97706' : '#166534',
+                      transition: 'width 0.3s ease'
+                    }}
+                  />
+                </div>
+
+                <div style={{ fontSize: '0.78rem', color: '#6B7280', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>🟢 Normal (&lt;70%)</span>
+                  <span>🟡 Nearing (70-90%)</span>
+                  <span>🔴 Full (&gt;90%)</span>
+                </div>
+              </div>
+
+              {/* Attention Required Card */}
+              <div className="card" style={{ padding: '1.15rem 1.25rem', backgroundColor: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#92400E', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <AlertTriangle size={18} color="#D97706" />
+                  <span>ATTENTION REQUIRED</span>
+                </div>
+
+                <div style={{ fontSize: '0.8rem', color: '#78350F', display: 'flex', flexDirection: 'column', gap: '0.35rem', maxHeight: '75px', overflowY: 'auto' }}>
+                  {todayBookings.some(b => b.arrivalStatus === 'Verified / Arrived' && b.procurementStatus === 'Completed' && b.paymentStatus !== 'Completed') && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span>⚠️ Payment pending for completed procurements</span>
+                    </div>
+                  )}
+                  {todayBookings.some(b => b.arrivalStatus === 'Verified / Arrived' && b.procurementStatus !== 'Completed' && b.procurementStage === 'WAITING') && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <span>🟡 Verified farmers waiting in queue</span>
+                    </div>
+                  )}
+                  {!todayBookings.some(b => b.arrivalStatus === 'Verified / Arrived' && (b.procurementStatus !== 'Completed' || b.paymentStatus !== 'Completed')) && (
+                    <div style={{ fontStyle: 'italic', color: '#059669' }}>
+                      ✅ All current queue operations are smooth & synchronized.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
             {/* ── MAIN TWO-COLUMN SECTION ── */}
             <div className="mandi-main-grid">
 
@@ -639,7 +790,7 @@ export const MandiDashboard = () => {
                     </div>
                   </div>
 
-                  <div className="mandi-activities-table-wrapper">
+                  <div className="mandi-activities-table-wrapper desktop-table-only">
                     <table className="mandi-activities-table">
                       <thead>
                         <tr>
@@ -691,6 +842,31 @@ export const MandiDashboard = () => {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+
+                  {/* Mobile Card List View for Recent Farmer Activities */}
+                  <div className="mobile-card-list mobile-only-view" style={{ display: 'none', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+                    {displayActivities.map((act) => (
+                      <div key={act.id} style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <span style={{ fontWeight: 800, color: '#166534', fontSize: '13px' }}>#{act.index} · {act.tokenNumber}</span>
+                          <span className={`mandi-status-pill ${act.statusClass}`}>{act.status}</span>
+                        </div>
+                        <div style={{ fontWeight: 700, fontSize: '14px', color: '#0E3524' }}>{act.farmerName} ({act.village})</div>
+                        <div style={{ fontSize: '12.5px', color: '#64748B', marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                          <span>Arrived: <strong>{act.arrivedAt}</strong></span>
+                          <span>Qty: <strong>{act.qty} Qtl</strong></span>
+                          <span>Payment: <strong>{act.payment}</strong></span>
+                        </div>
+                        <button
+                          className="mandi-view-btn"
+                          onClick={() => handleOpenProcurement(act)}
+                          style={{ marginTop: '10px', width: '100%', padding: '8px', textAlign: 'center' }}
+                        >
+                          View / Procure →
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
 

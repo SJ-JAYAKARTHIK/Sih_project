@@ -525,7 +525,7 @@ const RecentSlotBookingsView = ({
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)'
               }}
             >
-              <div style={{
+              <div className="booking-card-grid" style={{
                 display: 'grid',
                 gridTemplateColumns: '360px 1px 1fr 220px',
                 gap: '28px',
@@ -535,6 +535,17 @@ const RecentSlotBookingsView = ({
                 <div>
                   {/* Status Badges */}
                   <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                    <span style={{
+                      backgroundColor: b.source === 'VOICE IVR' || b.source === 'IVR' ? '#FEF3C7' : '#EFF6FF',
+                      border: b.source === 'VOICE IVR' || b.source === 'IVR' ? '1px solid #FDE68A' : '1px solid #BFDBFE',
+                      color: b.source === 'VOICE IVR' || b.source === 'IVR' ? '#B45309' : '#1D4ED8',
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      padding: '3px 10px',
+                      borderRadius: '12px'
+                    }}>
+                      {b.source === 'VOICE IVR' || b.source === 'IVR' ? '🎙️ VOICE IVR' : '🌐 WEB BOOKING'}
+                    </span>
                     <span style={{
                       backgroundColor: b.arrivalStatus === 'Verified / Arrived' ? '#DCFCE7' : '#FEF3C7',
                       border: b.arrivalStatus === 'Verified / Arrived' ? '1px solid #86EFAC' : '1px solid #FDE68A',
@@ -657,7 +668,7 @@ const RecentSlotBookingsView = ({
                 </div>
 
                 {/* Vertical Divider */}
-                <div style={{ width: '1px', height: '140px', backgroundColor: '#E5E7EB' }} />
+                <div className="booking-card-divider" style={{ width: '1px', height: '140px', backgroundColor: '#E5E7EB' }} />
 
                 {/* Center Column: Procurement Timeline */}
                 <div>
@@ -1193,7 +1204,7 @@ export const FarmerDashboard = () => {
                 padding: '24px 28px',
                 boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)'
               }}>
-                <div style={{
+                <div className="booking-card-grid" style={{
                   display: 'grid',
                   gridTemplateColumns: '360px 1px 1fr 220px',
                   gap: '28px',
@@ -1287,7 +1298,7 @@ export const FarmerDashboard = () => {
                   </div>
 
                   {/* Vertical Divider Line */}
-                  <div style={{ width: '1px', height: '140px', backgroundColor: '#E5E7EB' }} />
+                  <div className="booking-card-divider" style={{ width: '1px', height: '140px', backgroundColor: '#E5E7EB' }} />
 
                   {/* Center Column: Procurement Timeline */}
                   <div>
@@ -1361,6 +1372,45 @@ export const FarmerDashboard = () => {
         onMarkRead={handleMarkNotifRead}
         onMarkAllRead={handleMarkAllNotifRead}
       />
+
+      {/* ── MOBILE BOTTOM NAVIGATION BAR ── */}
+      <nav className="mobile-bottom-nav" aria-label="Mobile Bottom Navigation">
+        <button
+          className={`mobile-bottom-nav-item ${activeTab === 'home' ? 'active' : ''}`}
+          onClick={() => setActiveTab('home')}
+        >
+          <Home size={20} />
+          <span>Home</span>
+        </button>
+        <button
+          className="mobile-bottom-nav-item"
+          onClick={() => setIsBookingModalOpen(true)}
+        >
+          <CalendarPlus size={20} color="#D97706" />
+          <span style={{ color: '#D97706' }}>Book</span>
+        </button>
+        <button
+          className={`mobile-bottom-nav-item ${activeTab === 'bookings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('bookings')}
+        >
+          <Calendar size={20} />
+          <span>Bookings</span>
+        </button>
+        <button
+          className={`mobile-bottom-nav-item ${activeTab === 'bills' ? 'active' : ''}`}
+          onClick={() => setActiveTab('bills')}
+        >
+          <Receipt size={20} />
+          <span>Bills</span>
+        </button>
+        <button
+          className={`mobile-bottom-nav-item ${activeTab === 'profile' ? 'active' : ''}`}
+          onClick={() => setActiveTab('profile')}
+        >
+          <User size={20} />
+          <span>Profile</span>
+        </button>
+      </nav>
     </div>
   );
 };
